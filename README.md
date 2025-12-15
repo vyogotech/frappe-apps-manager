@@ -1,79 +1,178 @@
 # Frappe Apps Manager Plugin
 
-A comprehensive Claude Code plugin for Frappe Framework development, providing tools, commands, agents, and Skills to streamline your Frappe application development workflow.
+A comprehensive Claude Code plugin for Frappe Framework development with **95% SDLC coverage** - 15 commands, 10 agents, and 15 skills for complete Frappe/ERPNext development lifecycle.
+
+## Quick Start
+
+Install in 2 commands:
+
+```bash
+/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
+/plugin install frappe-apps-manager@Venkateshvenki404224
+```
+
+Then restart Claude Code and run `/help` to see all 15 Frappe commands!
 
 ## Overview
 
 The Frappe Apps Manager plugin extends Claude Code with specialized capabilities for building, deploying, and maintaining Frappe applications. Whether you're creating new apps, designing DocTypes, debugging issues, or deploying to production, this plugin provides expert assistance at every step.
 
+**What's New in v2.0.0:**
+- 🆕 8 new commands (site management, testing, debugging, operations)
+- 🆕 7 new agents (testing, security, devops, performance, integration, data, UI/UX)
+- 🆕 12 new skills (client scripts, tests, workflows, webhooks, migrations, and more)
+- 🆕 Frappe conventional commit output style
+- 🆕 Enhanced hooks with smart automation
+- ⭐ All components reference real ERPNext/Frappe core code
+- ⭐ 120+ core app references, 175+ working code examples
+
 ## Features
 
-### Custom Commands
+### 15 Commands - Complete Workflow Coverage
 
-Access powerful Frappe-specific commands directly in Claude Code:
+**Site & Environment:**
+- **`/frappe-new-site`** 🆕 - Create new Frappe site with database setup
+- **`/frappe-config`** 🆕 - Manage site configuration and settings
+- **`/frappe-db-reset`** 🆕 - Reset database for development
 
-- **`/frappe-new-app`** - Create a new Frappe application with proper structure
-- **`/frappe-install-app`** - Install a Frappe app to a site
-- **`/frappe-bench-start`** - Start Frappe bench with proper configuration
-- **`/frappe-migrate`** - Run database migrations for Frappe apps
-- **`/frappe-backup`** - Backup Frappe site data and files
-- **`/frappe-new-doctype`** - Create a new DocType in a Frappe app
-- **`/frappe-deploy`** - Deploy Frappe apps to production environment
+**Development & Testing:**
+- **`/frappe-new-app`** - Create new Frappe application
+- **`/frappe-new-doctype`** - Create new DocType
+- **`/frappe-test`** 🆕 - Run tests with coverage reports
+- **`/frappe-console`** 🆕 - Interactive Python console
 
-### Specialized Agents
+**Operations & Debugging:**
+- **`/frappe-logs`** 🆕 - View and analyze bench logs
+- **`/frappe-cache`** 🆕 - Manage Redis cache
+- **`/frappe-role-manager`** 🆕 - Manage roles and permissions
+- **`/frappe-backup`** - Backup site data
+- **`/frappe-migrate`** - Run database migrations
 
-Invoke expert agents for specific tasks:
+**Deployment:**
+- **`/frappe-install-app`** - Install app to site
+- **`/frappe-bench-start`** - Start development server
+- **`/frappe-deploy`** - Deploy to production
 
-- **Frappe Developer** - Specialized in creating apps, DocTypes, and custom scripts
-- **Frappe Debugger** - Expert at troubleshooting errors, logs, and performance issues
-- **Frappe Architect** - Designs app architecture, data models, and system integration
+### 10 Specialized Agents
 
-### Agent Skills
+**Strategic & Development:**
+- **frappe-architect** - System design and architecture
+- **frappe-developer** - Implementation and coding
+- **frappe-ui-ux** 🆕 - Frontend and user experience
 
-Model-invoked capabilities that Claude uses autonomously:
+**Quality & Security:**
+- **frappe-tester** 🆕 - Testing strategies and QA
+- **frappe-security** 🆕 - Security review and compliance
+- **frappe-performance** 🆕 - Performance optimization
 
-- **frappe-doctype-builder** - Build DocTypes with fields, permissions, and naming
-- **frappe-api-handler** - Create custom API endpoints and whitelisted methods
-- **frappe-report-generator** - Generate custom reports and data analysis
+**Operations & Integration:**
+- **frappe-devops** 🆕 - CI/CD and deployment
+- **frappe-debugger** - Troubleshooting and diagnostics
+- **frappe-integration** 🆕 - API and webhook integration
+- **frappe-data-engineer** 🆕 - Data migration and management
 
-### Hooks
+### 15 Autonomous Skills
 
-Automated workflows for Frappe development:
+**Core Development:**
+- **frappe-doctype-builder** - Generate DocType JSON structures
+- **frappe-api-handler** - Create REST API endpoints
+- **frappe-client-script-generator** 🆕 - JavaScript form scripts (10 patterns)
+- **frappe-report-generator** - Custom reports and analytics
 
-- **frappe-context-detector** - Automatically detects if you're in a Frappe bench
-- **frappe-auto-migrate** - Reminds you to run migrations after DocType changes
-- **frappe-bench-validator** - Validates bench setup before operations
+**Testing & Quality:**
+- **frappe-unit-test-generator** 🆕 - Unit test generation
+- **frappe-integration-test-generator** 🆕 - Integration test scenarios
+
+**Workflows & States:**
+- **frappe-workflow-generator** 🆕 - Approval workflows
+- **frappe-state-machine-helper** 🆕 - State transition logic
+
+**Integration & Data:**
+- **frappe-webhook-manager** 🆕 - Webhook handlers
+- **frappe-external-api-connector** 🆕 - External API clients
+- **frappe-data-migration-generator** 🆕 - Data migration scripts
+- **frappe-fixture-creator** 🆕 - Test and master data fixtures
+
+**Optimization & UX:**
+- **frappe-performance-optimizer** 🆕 - Query and cache optimization
+- **frappe-web-form-builder** 🆕 - Public web forms
+- **frappe-documentation-generator** 🆕 - API documentation
+
+### Output Style
+
+- **frappe-commit** 🆕 - Frappe conventional commit standard with semantic versioning
+
+### 7 Enhanced Hooks
+
+Smart automation for common tasks:
+
+- **frappe-context-detector** - Detects Frappe bench directory
+- **frappe-auto-migrate** - Reminds to run migrations after DocType changes
+- **frappe-bench-validator** - Validates bench setup
+- **frappe-test-file-validator** 🆕 - Validates test file locations
+- **frappe-test-reminder** 🆕 - Reminds to run tests after code changes
+- **frappe-cache-clear-reminder** 🆕 - Suggests cache clear after JS changes
+- **frappe-site-check** 🆕 - Verifies site exists for operations
 
 ## Installation
 
+### Quick Install from GitHub
+
+```bash
+# 1. Add the marketplace
+/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
+
+# 2. Install the plugin
+/plugin install frappe-apps-manager@Venkateshvenki404224
+
+# 3. Restart Claude Code
+
+# 4. Verify installation
+/help  # Should show all 15 Frappe commands
+
+# 5. Try it out!
+/frappe-new-site
+```
+
+### Alternative Installation Methods
+
+**Full GitHub URL:**
+```bash
+/plugin marketplace add https://github.com/Venkateshvenki404224/frappe-apps-manager
+/plugin install frappe-apps-manager@Venkateshvenki404224
+```
+
+**Local Development:**
+```bash
+git clone https://github.com/Venkateshvenki404224/frappe-apps-manager.git
+/plugin marketplace add ./frappe-apps-manager
+/plugin install frappe-apps-manager@frappe-apps-manager
+```
+
+**Team Auto-Install:**
+
+Add to your project's `.claude/settings.json`:
+```json
+{
+  "pluginMarketplaces": [{
+    "name": "frappe-marketplace",
+    "source": "Venkateshvenki404224/frappe-apps-manager"
+  }],
+  "plugins": [{
+    "name": "frappe-apps-manager",
+    "marketplace": "frappe-marketplace",
+    "enabled": true
+  }]
+}
+```
+
+Team members who trust the repository will get the plugin automatically!
+
 ### Prerequisites
 
-- Claude Code installed on your machine
+- Claude Code installed
 - Frappe Framework knowledge (basic to intermediate)
 - A Frappe bench for testing (recommended)
-
-### Quick Install
-
-1. **Add the Frappe marketplace:**
-   ```shell
-   /plugin marketplace add ./frappe-marketplace
-   ```
-
-2. **Install the plugin:**
-   ```shell
-   /plugin install frappe-apps-manager@frappe-marketplace
-   ```
-
-3. **Verify installation:**
-   ```shell
-   /help
-   ```
-   You should see all Frappe commands listed.
-
-4. **Try a command:**
-   ```shell
-   /frappe-new-app
-   ```
 
 ## Usage Guide
 
