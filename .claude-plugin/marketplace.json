@@ -1,0 +1,16 @@
+{
+  "name": "frappe-marketplace",
+  "owner": {
+    "name": "Frappe Development Community"
+  },
+  "description": "Official marketplace for Frappe Framework development tools and plugins",
+  "plugins": [
+    {
+      "name": "frappe-apps-manager",
+      "source": "./frappe-apps-manager",
+      "description": "Comprehensive Frappe Framework development platform with 95% SDLC coverage - 15 commands, 10 agents, 15 skills for complete Frappe/ERPNext development lifecycle",
+      "version": "2.0.0",
+      "tags": ["frappe", "erpnext", "development", "bench", "doctype", "testing", "deployment", "performance", "security", "devops"]
+    }
+  ]
+}
