@@ -352,6 +352,32 @@ Skills are invoked automatically by Claude when appropriate. You don't need to e
 **Report Generation:**
 > "Show me monthly sales trends by product category"
 
+## Testing Skills
+
+See [TESTING_SKILLS.md](TESTING_SKILLS.md) for comprehensive testing guide.
+
+### Quick Test
+
+**Claude Code:**
+```bash
+/help  # Verify commands appear
+"Create a Customer DocType with name and email"  # Test skill auto-invocation
+```
+
+**Cursor IDE:**
+```
+/  # List all skills
+/frappe-doctype-builder  # Invoke skill manually
+```
+
+**Gemini CLI:**
+```bash
+gemini
+/skills list  # List all skills
+/skills enable frappe-doctype-builder  # Enable skill
+"Create a Customer DocType"  # Use skill
+```
+
 ## Troubleshooting
 
 ### Plugin Not Loading
@@ -373,6 +399,12 @@ Skills are invoked automatically by Claude when appropriate. You don't need to e
 ### Commands Not Appearing
 
 After installing the plugin, you may need to restart Claude Code for commands to appear in `/help`.
+
+### Skills Not Working
+
+- **Claude Code**: Verify plugin is installed and skills directory exists
+- **Cursor IDE**: Check symlinks in `.cursor/skills/` are valid
+- **Gemini CLI**: Enable experimental skills in `/settings`
 
 ### Hooks Not Triggering
 
