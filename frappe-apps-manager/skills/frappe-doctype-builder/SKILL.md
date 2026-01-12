@@ -1,269 +1,139 @@
 ---
 name: frappe-doctype-builder
-description: Build Frappe DocTypes with fields, permissions, and naming configurations. Use this skill when creating or modifying DocType structures.
+description: Generate complete Frappe DocType with JSON, Python controller, and JavaScript form scripts.
 ---
 
-# Frappe DocType Builder Skill
+# Generate Frappe DocType
 
-Build complete DocType definitions with proper field types, permissions, and configurations.
+Create complete DocType definitions with proper field types, permissions, controllers, and client scripts.
 
-## When to Use This Skill
+## When to Use
 
-Claude should invoke this skill when:
-- User wants to create a new DocType
-- User needs to add fields to an existing DocType
-- User asks about DocType structure or design
-- User wants to modify DocType properties
-- User needs help with DocType JSON schema
+- Creating new DocTypes
+- Adding fields to existing DocTypes
+- Building master/transaction DocTypes
+- Creating child tables
 
-## Capabilities
+## Core Patterns
 
-### 1. DocType JSON Generation
-Create complete DocType JSON files with:
-- Metadata (name, module, naming, permissions)
-- Fields with proper types and options
-- Permissions for different roles
-- Form layout and sections
-- Naming series configuration
+### 1. DocType JSON
 
-### 2. Field Type Expertise
-Support all Frappe field types:
-- **Data**: Short text fields
-- **Text**: Long text with editor options
-- **Int**: Integer numbers
-- **Float**: Decimal numbers
-- **Currency**: Money values
-- **Date**: Date picker
-- **Datetime**: Date and time
-- **Time**: Time picker
-- **Link**: Reference to another DocType
-- **Select**: Dropdown with options
-- **Check**: Boolean checkbox
-- **Table**: Child table
-- **Attach**: File upload
-- **Attach Image**: Image upload with preview
-- **Signature**: Signature capture
-- **HTML**: Custom HTML content
-- **Markdown Editor**: Markdown content
-- **Code**: Code editor with syntax highlighting
-- **Dynamic Link**: Polymorphic references
-- **Rating**: Star rating
-- **Color**: Color picker
-- **Geolocation**: GPS coordinates
-
-### 3. DocType Patterns
-
-**Master DocType:**
 ```json
 {
+  "doctype": "DocType",
   "name": "Customer",
   "module": "CRM",
   "autoname": "naming_series:",
-  "naming_rule": "By naming series",
+  "title_field": "customer_name",
   "track_changes": 1,
-  "is_submittable": 0
-}
-```
-
-**Transaction DocType:**
-```json
-{
-  "name": "Sales Order",
-  "module": "Selling",
-  "is_submittable": 1,
-  "autoname": "naming_series:",
-  "track_changes": 1
-}
-```
-
-**Child Table:**
-```json
-{
-  "name": "Sales Order Item",
-  "module": "Selling",
-  "istable": 1,
-  "editable_grid": 1
-}
-```
-
-**Settings DocType:**
-```json
-{
-  "name": "System Settings",
-  "module": "Core",
-  "issingle": 1
-}
-```
-
-### 4. Common Field Patterns
-
-**Naming Series:**
-```json
-{
-  "fieldname": "naming_series",
-  "fieldtype": "Select",
-  "label": "Naming Series",
-  "options": "CUST-.YYYY.-\nCUST-",
-  "reqd": 1
-}
-```
-
-**Status Field:**
-```json
-{
-  "fieldname": "status",
-  "fieldtype": "Select",
-  "label": "Status",
-  "options": "Draft\nSubmitted\nCancelled",
-  "default": "Draft"
-}
-```
-
-**Link Field:**
-```json
-{
-  "fieldname": "customer",
-  "fieldtype": "Link",
-  "label": "Customer",
-  "options": "Customer",
-  "reqd": 1
-}
-```
-
-**Child Table:**
-```json
-{
-  "fieldname": "items",
-  "fieldtype": "Table",
-  "label": "Items",
-  "options": "Sales Order Item",
-  "reqd": 1
-}
-```
-
-**Computed Field:**
-```json
-{
-  "fieldname": "total",
-  "fieldtype": "Currency",
-  "label": "Total Amount",
-  "read_only": 1
-}
-```
-
-### 5. Permission Configuration
-
-```json
-{
-  "permissions": [
+  "is_submittable": 0,
+  "fields": [
     {
-      "role": "Sales User",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 0,
-      "submit": 0,
-      "cancel": 0
+      "fieldname": "customer_name",
+      "label": "Customer Name",
+      "fieldtype": "Data",
+      "reqd": 1
     },
     {
-      "role": "Sales Manager",
+      "fieldname": "email_id",
+      "label": "Email",
+      "fieldtype": "Data",
+      "options": "Email"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
       "read": 1,
       "write": 1,
       "create": 1,
-      "delete": 1,
-      "submit": 1,
-      "cancel": 1
+      "delete": 1
     }
   ]
 }
 ```
 
-### 6. Advanced Features
+### 2. Field Types
 
-**Dependent Fields:**
+**Common:** Data, Text, Int, Float, Currency, Date, Datetime, Link, Table, Select, Check
+**Special:** HTML, Code, Color, Geolocation, Attach, Attach Image
+
+### 3. DocType Patterns
+
+**Master:** `track_changes: 1`, `is_submittable: 0`
+**Transaction:** `is_submittable: 1`, `track_changes: 1`
+**Child Table:** `istable: 1`, `editable_grid: 1`
+**Settings:** `issingle: 1`
+
+### 4. Python Controller
+
+```python
+import frappe
+from frappe.model.document import Document
+
+class Customer(Document):
+    def validate(self):
+        if self.email_id:
+            frappe.utils.validate_email_address(self.email_id, throw=True)
+        if self.credit_limit and self.credit_limit < 0:
+            frappe.throw("Credit Limit cannot be negative")
+    
+    def before_insert(self):
+        if not self.customer_type:
+            self.customer_type = "Company"
+    
+    def after_insert(self):
+        self.create_primary_contact()
+```
+
+### 5. JavaScript Form Script
+
+```javascript
+frappe.ui.form.on('Customer', {
+    refresh: function(frm) {
+        if (frm.doc.docstatus === 0) {
+            frm.add_custom_button(__('Create Quotation'), function() {
+                frappe.new_doc('Quotation', {'party_name': frm.doc.name});
+            });
+        }
+    },
+    customer_type: function(frm) {
+        frm.set_df_property('company_name', 'hidden', 
+            frm.doc.customer_type === 'Individual' ? 1 : 0);
+    }
+});
+```
+
+### 6. Naming Series
+
 ```json
 {
-  "fieldname": "customer_group",
-  "fieldtype": "Link",
-  "options": "Customer Group",
-  "depends_on": "eval:doc.customer"
+  "fieldname": "naming_series",
+  "fieldtype": "Select",
+  "options": "CUST-.YYYY.-",
+  "default": "CUST-.YYYY.-",
+  "reqd": 1
 }
 ```
 
-**Mandatory Depends On:**
-```json
-{
-  "fieldname": "tax_id",
-  "fieldtype": "Data",
-  "label": "Tax ID",
-  "mandatory_depends_on": "eval:doc.country=='United States'"
-}
-```
+And in DocType: `"autoname": "naming_series:"`
 
-**Read Only Depends On:**
-```json
-{
-  "fieldname": "posted_date",
-  "fieldtype": "Date",
-  "read_only_depends_on": "eval:doc.docstatus==1"
-}
-```
+## Key Patterns
 
-## Output Format
-
-When building a DocType, provide:
-1. Complete JSON structure
-2. Explanation of key fields
-3. Permission rationale
-4. Controller method suggestions (if needed)
-5. Migration instructions
+1. Field naming: snake_case
+2. Labels: Title Case
+3. Required: `"reqd": 1`
+4. Validation: `validate()` method
+5. Defaults: `before_insert()` or field default
+6. Permissions: Role-based in JSON
 
 ## Best Practices
 
-1. **Naming**: Use clear, descriptive field names in snake_case
-2. **Required Fields**: Mark essential fields as required
-3. **Defaults**: Provide sensible default values
-4. **Permissions**: Start restrictive, expand as needed
-5. **Indexing**: Add database indexes for frequently queried fields
-6. **Validation**: Use field properties for basic validation
-7. **Organization**: Group related fields with sections and column breaks
+- Master data: `track_changes: 1`
+- Transactions: `is_submittable: 1`
+- Child tables: `istable: 1`, `editable_grid: 1`
+- Validate in controller
+- Client scripts for UX only
+- Least privilege permissions
 
-## Integration with Controllers
-
-After creating DocType JSON, suggest controller methods:
-- `validate()` - Pre-save validation
-- `before_save()` - Modify values before saving
-- `on_submit()` - Actions when document is submitted
-- `on_cancel()` - Actions when document is cancelled
-- `on_trash()` - Actions before deletion
-
-## Example Usage Flow
-
-1. **User asks**: "Create a Customer DocType with name, email, and phone"
-2. **Skill generates**:
-   - Complete DocType JSON
-   - Appropriate field types
-   - Basic permissions
-   - Naming configuration
-3. **Output includes**:
-   - JSON file content
-   - Where to save it (`apps/<app>/doctype/customer/customer.json`)
-   - Migration command (`bench --site <site> migrate`)
-   - Next steps for customization
-
-## File Structure
-
-Generated files should follow:
-```
-apps/
-└── <app_name>/
-    └── <module_name>/
-        └── doctype/
-            └── <doctype_name>/
-                ├── __init__.py
-                ├── <doctype_name>.json
-                ├── <doctype_name>.py
-                └── <doctype_name>.js
-```
-
-Remember: This skill is model-invoked. Claude will use it autonomously when detecting DocType-related tasks.
+Remember: This skill is model-invoked. Claude will use it autonomously when detecting DocType development tasks.

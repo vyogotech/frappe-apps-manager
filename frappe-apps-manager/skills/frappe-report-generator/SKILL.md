@@ -1,529 +1,248 @@
 ---
 name: frappe-report-generator
-description: Generate custom reports, query reports, and script reports for Frappe applications. Use when creating data analysis and reporting features.
+description: Generate Frappe reports (query/script) with filters, charts, HTML templates, and JS customization.
 ---
 
-# Frappe Report Generator Skill
+# Frappe Report Generator
 
 Create custom reports for data analysis, dashboards, and business intelligence in Frappe.
 
-## When to Use This Skill
+## When to Use
 
-Claude should invoke this skill when:
-- User wants to create custom reports
-- User needs data analysis or aggregation
-- User asks about query reports or script reports
-- User wants to build dashboards
-- User needs help with report formatting or filters
+- Creating custom reports (query/script)
+- Data analysis or aggregation
+- Building dashboards
+- Report formatting and filters
 
-## Capabilities
+## Report Types
 
-### 1. Report Types
+**Query Report**: SQL-based, fast for large datasets
+**Script Report**: Python-based, full flexibility
+**Report Builder**: No-code, user-configurable
 
-**Query Report (SQL-based):**
-- Fast performance for large datasets
-- Direct SQL queries
-- Complex joins and aggregations
-- Limited formatting options
+## Core Patterns
 
-**Script Report (Python-based):**
-- Full Python flexibility
-- Complex business logic
-- Dynamic columns and formatting
-- Access to Frappe ORM
+### 1. Basic Query Report
 
-**Report Builder (No-code):**
-- User-configurable
-- No coding required
-- Basic aggregations
-- Simple use cases
-
-### 2. Query Report Structure
-
-**Basic Query Report JSON:**
+**JSON:**
 ```json
 {
   "name": "Sales Analysis",
-  "report_name": "Sales Analysis",
-  "ref_doctype": "Sales Order",
   "report_type": "Query Report",
-  "is_standard": "Yes",
-  "module": "Selling",
-  "disabled": 0,
-  "query": "",
-  "filters": [],
-  "columns": []
+  "ref_doctype": "Sales Order",
+  "module": "Selling"
 }
 ```
 
-**Python File (sales_analysis.py):**
+**Python:**
 ```python
 import frappe
 from frappe import _
 
 def execute(filters=None):
-    columns = get_columns()
-    data = get_data(filters)
-    return columns, data
+    return get_columns(), get_data(filters)
 
 def get_columns():
     return [
-        {
-            "fieldname": "sales_order",
-            "label": _("Sales Order"),
-            "fieldtype": "Link",
-            "options": "Sales Order",
-            "width": 150
-        },
-        {
-            "fieldname": "customer",
-            "label": _("Customer"),
-            "fieldtype": "Link",
-            "options": "Customer",
-            "width": 150
-        },
-        {
-            "fieldname": "posting_date",
-            "label": _("Date"),
-            "fieldtype": "Date",
-            "width": 100
-        },
-        {
-            "fieldname": "grand_total",
-            "label": _("Grand Total"),
-            "fieldtype": "Currency",
-            "width": 120
-        },
-        {
-            "fieldname": "status",
-            "label": _("Status"),
-            "fieldtype": "Data",
-            "width": 100
-        }
+        {"fieldname": "customer", "label": _("Customer"), "fieldtype": "Link", "options": "Customer", "width": 150},
+        {"fieldname": "grand_total", "label": _("Total"), "fieldtype": "Currency", "width": 120}
     ]
 
 def get_data(filters):
-    conditions = get_conditions(filters)
-
-    query = f"""
-        SELECT
-            so.name as sales_order,
-            so.customer,
-            so.posting_date,
-            so.grand_total,
-            so.status
-        FROM
-            `tabSales Order` so
-        WHERE
-            so.docstatus = 1
-            {conditions}
-        ORDER BY
-            so.posting_date DESC
-    """
-
-    return frappe.db.sql(query, filters, as_dict=1)
-
-def get_conditions(filters):
-    conditions = []
-
-    if filters.get("customer"):
-        conditions.append("so.customer = %(customer)s")
-
-    if filters.get("from_date"):
-        conditions.append("so.posting_date >= %(from_date)s")
-
-    if filters.get("to_date"):
-        conditions.append("so.posting_date <= %(to_date)s")
-
-    if filters.get("status"):
-        conditions.append("so.status = %(status)s")
-
-    return " AND " + " AND ".join(conditions) if conditions else ""
+    return frappe.db.sql("""
+        SELECT customer, grand_total
+        FROM `tabSales Order`
+        WHERE docstatus = 1
+        AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+    """, filters, as_dict=1)
 ```
 
-### 3. Script Report Structure
+### 2. Script Report with Chart & Summary
 
-**Advanced Script Report:**
 ```python
-import frappe
-from frappe import _
-from frappe.utils import flt, getdate
-
 def execute(filters=None):
     columns = get_columns()
     data = get_data(filters)
     chart = get_chart_data(data)
-    report_summary = get_report_summary(data)
-
-    return columns, data, None, chart, report_summary
-
-def get_columns():
-    return [
-        {
-            "fieldname": "customer",
-            "label": _("Customer"),
-            "fieldtype": "Link",
-            "options": "Customer",
-            "width": 150
-        },
-        {
-            "fieldname": "total_orders",
-            "label": _("Total Orders"),
-            "fieldtype": "Int",
-            "width": 100
-        },
-        {
-            "fieldname": "total_amount",
-            "label": _("Total Amount"),
-            "fieldtype": "Currency",
-            "width": 120
-        },
-        {
-            "fieldname": "avg_order_value",
-            "label": _("Avg Order Value"),
-            "fieldtype": "Currency",
-            "width": 120
-        }
-    ]
-
-def get_data(filters):
-    # Get sales orders
-    sales_orders = frappe.get_all(
-        "Sales Order",
-        filters={
-            "docstatus": 1,
-            "posting_date": ["between", [filters.get("from_date"), filters.get("to_date")]]
-        },
-        fields=["customer", "grand_total"]
-    )
-
-    # Aggregate by customer
-    customer_data = {}
-    for order in sales_orders:
-        customer = order.customer
-        if customer not in customer_data:
-            customer_data[customer] = {
-                "customer": customer,
-                "total_orders": 0,
-                "total_amount": 0
-            }
-
-        customer_data[customer]["total_orders"] += 1
-        customer_data[customer]["total_amount"] += flt(order.grand_total)
-
-    # Calculate averages
-    data = []
-    for customer, values in customer_data.items():
-        data.append({
-            "customer": customer,
-            "total_orders": values["total_orders"],
-            "total_amount": values["total_amount"],
-            "avg_order_value": values["total_amount"] / values["total_orders"]
-        })
-
-    return sorted(data, key=lambda x: x["total_amount"], reverse=True)
+    summary = get_report_summary(data)
+    return columns, data, None, chart, summary
 
 def get_chart_data(data):
-    """Generate chart for report"""
-    if not data:
-        return None
-
-    labels = [d["customer"] for d in data[:10]]  # Top 10
-    values = [d["total_amount"] for d in data[:10]]
-
     return {
-        "data": {
-            "labels": labels,
-            "datasets": [
-                {
-                    "name": "Total Sales",
-                    "values": values
-                }
-            ]
-        },
-        "type": "bar",
-        "colors": ["#7cd6fd"]
+        "data": {"labels": [...], "datasets": [{"name": "Sales", "values": [...]}]},
+        "type": "bar"
     }
 
 def get_report_summary(data):
-    """Generate summary cards"""
-    if not data:
-        return []
-
-    total_customers = len(data)
-    total_revenue = sum(d["total_amount"] for d in data)
-    total_orders = sum(d["total_orders"] for d in data)
-    avg_order_value = total_revenue / total_orders if total_orders else 0
-
     return [
-        {
-            "value": total_customers,
-            "label": "Total Customers",
-            "datatype": "Int"
-        },
-        {
-            "value": total_revenue,
-            "label": "Total Revenue",
-            "datatype": "Currency"
-        },
-        {
-            "value": total_orders,
-            "label": "Total Orders",
-            "datatype": "Int"
-        },
-        {
-            "value": avg_order_value,
-            "label": "Avg Order Value",
-            "datatype": "Currency"
-        }
+        {"label": "Total", "value": sum(...), "indicator": "Green"},
+        {"label": "Count", "value": len(data), "indicator": "Blue"}
     ]
 ```
 
-### 4. Report Filters
+### 3. Filters
 
-**Filter Definition (JSON):**
 ```json
 {
   "filters": [
-    {
-      "fieldname": "customer",
-      "label": "Customer",
-      "fieldtype": "Link",
-      "options": "Customer"
-    },
-    {
-      "fieldname": "from_date",
-      "label": "From Date",
-      "fieldtype": "Date",
-      "default": "frappe.datetime.month_start()",
-      "reqd": 1
-    },
-    {
-      "fieldname": "to_date",
-      "label": "To Date",
-      "fieldtype": "Date",
-      "default": "frappe.datetime.month_end()",
-      "reqd": 1
-    },
-    {
-      "fieldname": "status",
-      "label": "Status",
-      "fieldtype": "Select",
-      "options": "\nDraft\nSubmitted\nCancelled",
-      "default": "Submitted"
-    }
+    {"fieldname": "from_date", "fieldtype": "Date", "label": "From Date", "reqd": 1},
+    {"fieldname": "to_date", "fieldtype": "Date", "label": "To Date", "reqd": 1},
+    {"fieldname": "customer", "fieldtype": "Link", "options": "Customer"}
   ]
 }
 ```
 
-### 5. Advanced Query Patterns
+### 4. HTML Template
 
-**Complex Joins:**
+**Pattern**: Use Jinja2-like syntax for custom layouts
+**Reference**: See `projectnext/report/project_cost_and_time_report/project_cost_and_time_report.html`
+
 ```python
-def get_data(filters):
-    query = """
-        SELECT
-            so.name as sales_order,
-            so.customer,
-            c.customer_group,
-            c.territory,
-            so.posting_date,
-            SUM(soi.amount) as total_amount,
-            COUNT(soi.name) as total_items
-        FROM
-            `tabSales Order` so
-        INNER JOIN
-            `tabCustomer` c ON so.customer = c.name
-        INNER JOIN
-            `tabSales Order Item` soi ON soi.parent = so.name
-        WHERE
-            so.docstatus = 1
-            AND so.posting_date BETWEEN %(from_date)s AND %(to_date)s
-        GROUP BY
-            so.name
-        ORDER BY
-            total_amount DESC
-    """
-
-    return frappe.db.sql(query, filters, as_dict=1)
+def execute(filters=None):
+    # ... get data
+    html = None  # HTML file auto-loaded if exists
+    return columns, data, None, chart, summary, html
 ```
 
-**Aggregations:**
-```python
-def get_summary_data(filters):
-    query = """
-        SELECT
-            MONTH(posting_date) as month,
-            YEAR(posting_date) as year,
-            COUNT(name) as order_count,
-            SUM(grand_total) as total_sales,
-            AVG(grand_total) as avg_order_value,
-            MIN(grand_total) as min_order,
-            MAX(grand_total) as max_order
-        FROM
-            `tabSales Order`
-        WHERE
-            docstatus = 1
-            AND posting_date BETWEEN %(from_date)s AND %(to_date)s
-        GROUP BY
-            YEAR(posting_date), MONTH(posting_date)
-        ORDER BY
-            year DESC, month DESC
-    """
+**Key HTML patterns:**
+- `{{ data[0].field }}` - Access data
+- `{{ filters.field }}` - Access filters
+- `{% for row in data %}` - Iterate
+- `{% var blocks = {} %}` - Grouping
 
-    return frappe.db.sql(query, filters, as_dict=1)
-```
+### 5. JavaScript Customization
 
-### 6. Dynamic Columns
+**Pattern**: Client-side formatting and interactions
+**Reference**: See `projectnext/report/project_cost_and_time_report/project_cost_and_time_report.js`
 
-```python
-def get_columns():
-    """Generate columns dynamically based on data"""
-    base_columns = [
-        {
-            "fieldname": "customer",
-            "label": _("Customer"),
-            "fieldtype": "Link",
-            "options": "Customer",
-            "width": 150
+```javascript
+frappe.query_reports["Report Name"] = {
+    "formatter": function(value, row, column, data, default_formatter) {
+        if (column.fieldname === "delay" && value > 5) {
+            return `<span style="color: red;">${value}</span>`;
         }
-    ]
-
-    # Add month columns dynamically
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-    for month in months:
-        base_columns.append({
-            "fieldname": month.lower(),
-            "label": _(month),
-            "fieldtype": "Currency",
-            "width": 100
-        })
-
-    base_columns.append({
-        "fieldname": "total",
-        "label": _("Total"),
-        "fieldtype": "Currency",
-        "width": 120
-    })
-
-    return base_columns
+        return default_formatter(value, row, column, data);
+    }
+};
 ```
 
-### 7. Report Formatting
+### 6. Axis-Mixed Chart
 
-**Conditional Formatting:**
+**Pattern**: Combine bars and lines for multi-metric visualization
+**Reference**: See `projectnext/report/project_cost_and_time_report/project_cost_and_time_report.py:120-196`
+
 ```python
-def get_data(filters):
-    data = # ... get data
-
-    for row in data:
-        # Add indicator
-        if row.grand_total > 100000:
-            row["indicator"] = "green"
-        elif row.grand_total > 50000:
-            row["indicator"] = "orange"
-        else:
-            row["indicator"] = "red"
-
-    return data
+chart = {
+    "data": {
+        "labels": labels,
+        "datasets": [
+            {"name": "Cost", "values": costs, "chartType": "bar"},
+            {"name": "Progress", "values": progress, "chartType": "line"}
+        ]
+    },
+    "type": "axis-mixed",
+    "colors": ["#7cd6fd", "#5cb85c"]
+}
 ```
 
-### 8. Export Features
+### 7. Report Summary with Indicators
 
-Reports automatically support:
-- Excel export
-- PDF export
-- CSV export
-- Print view
+**Pattern**: Color-coded indicators based on values
+**Reference**: See `projectnext/report/project_cost_and_time_report/project_cost_and_time_report.py:67-118`
 
-### 9. Performance Optimization
-
-**Use Indexes:**
 ```python
-# Ensure proper indexes exist
-# ALTER TABLE `tabSales Order` ADD INDEX idx_posting_date (posting_date);
-# ALTER TABLE `tabSales Order` ADD INDEX idx_customer (customer);
+summary = [
+    {
+        "label": "Completion",
+        "value": f"{percentage:.1f}%",
+        "indicator": "Red" if percentage < 30 else "Orange" if percentage < 70 else "Green"
+    }
+]
 ```
 
-**Limit Results:**
+### 8. Custom Query Functions
+
+**Pattern**: Organize complex queries in controller modules
+
 ```python
-def get_data(filters):
-    # Add LIMIT for large datasets
-    query = f"""
-        SELECT ...
-        FROM ...
-        WHERE ...
-        LIMIT 1000
-    """
-    return frappe.db.sql(query, filters, as_dict=1)
+from projectnext.controllers.queries.reports.costandtimereport import get_project_report
+
+def get_report_data(filters):
+    return get_project_report("Project", "project", "", 0, 200, filters)
 ```
 
-**Use Query Caching:**
+### 9. Filter Validation
+
 ```python
-def get_data(filters):
-    cache_key = f"sales_report_{filters.get('from_date')}_{filters.get('to_date')}"
-
-    data = frappe.cache().get_value(cache_key)
-    if data:
-        return data
-
-    data = frappe.db.sql(query, filters, as_dict=1)
-    frappe.cache().set_value(cache_key, data, expires_in_sec=300)
-
-    return data
+def validate_filters(filters):
+    if not filters.get("project"):
+        frappe.throw(_("Project is required"))
+    if filters.get("start") > filters.get("end"):
+        frappe.throw(_("Start Date cannot be after End Date"))
 ```
 
-### 10. Report Permissions
+### 10. Data Grouping
 
-**Permission Query:**
 ```python
-def get_data(filters):
-    # Only show data user has permission to see
-    if not frappe.has_permission("Sales Order", "read"):
-        frappe.throw(_("Not permitted"))
-
-    # Filter by user permissions
-    user_customers = frappe.get_list(
-        "Customer",
-        filters={"name": ["in", frappe.get_roles()]},
-        pluck="name"
-    )
-
-    if user_customers:
-        filters["customer"] = ["in", user_customers]
+# Group by category
+blocks = {}
+for row in data:
+    block = row.get("block_name") or "Unassigned"
+    if block not in blocks:
+        blocks[block] = []
+    blocks[block].append(row)
 ```
 
 ## File Structure
 
-Reports should be organized as:
 ```
-apps/<app_name>/<module>/report/<report_name>/
+apps/<app>/<module>/report/<report_name>/
 ├── __init__.py
 ├── <report_name>.json
 ├── <report_name>.py
-└── <report_name>.js (optional, for client-side customization)
+├── <report_name>.js (optional)
+└── <report_name>.html (optional)
 ```
+
+## Advanced Patterns
+
+**Complex Joins**: Use INNER JOIN with GROUP BY for aggregations
+**Dynamic Columns**: Build columns list programmatically
+**Caching**: Use `frappe.cache().get_value()` for expensive queries
+**Permissions**: Check with `frappe.has_permission()` before data access
+**Performance**: Add indexes, use LIMIT, filter early in WHERE clause
+
+## Complete Examples
+
+**Simple Report**: See ERPNext `erpnext/selling/report/sales_analysis/`
+**Complex Report**: See `projectnext/report/project_cost_and_time_report/`
+- Python: Lines 1-196 (structure, validation, charts, summary)
+- HTML: Custom template with grouping
+- JS: Client-side formatting
+- JSON: Filter configuration
 
 ## Best Practices
 
-1. **Optimize queries** - Use proper indexes and LIMIT
-2. **Filter early** - Apply filters in WHERE clause, not in Python
-3. **Use parameterized queries** - Prevent SQL injection
-4. **Cache when possible** - Cache expensive calculations
-5. **Validate filters** - Always validate user inputs
-6. **Handle permissions** - Check user permissions
-7. **Provide defaults** - Set sensible default filters
-8. **Document reports** - Add helpful descriptions
-9. **Test with large data** - Ensure performance at scale
-10. **Use chart/summary wisely** - Enhance user experience
+1. Optimize queries (indexes, LIMIT)
+2. Filter early (WHERE clause, not Python)
+3. Use parameterized queries
+4. Validate filters
+5. Check permissions
+6. Cache expensive calculations
+7. Use HTML templates for complex layouts
+8. Use JS for client-side formatting
+9. Group data for better presentation
+10. Use indicators for quick status
 
-## Testing Reports
+## Key Takeaways
 
-Access reports at:
-```
-http://localhost:8000/app/query-report/Sales%20Analysis
-```
+- **Query Reports**: Fast SQL-based reports
+- **Script Reports**: Flexible Python-based reports
+- **HTML Templates**: Custom layouts and grouping
+- **JavaScript**: Client-side formatting
+- **Charts**: Bar, line, axis-mixed types
+- **Summary**: Indicators for status
+- **Validation**: Always validate filters
+- **Performance**: Index, cache, limit
 
 Remember: This skill is model-invoked. Claude will use it autonomously when detecting report development tasks.

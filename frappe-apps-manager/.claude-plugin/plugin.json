@@ -1,10 +1,10 @@
 {
   "name": "frappe-apps-manager",
-  "description": "Comprehensive Frappe Framework development platform with 95% SDLC coverage - 15 commands, 10 agents, 15 skills for complete Frappe/ERPNext development lifecycle",
-  "version": "2.0.0",
+  "description": "Comprehensive Frappe Framework development platform with 95% SDLC coverage - 15 commands, 10 agents, 28 skills for complete Frappe/ERPNext development lifecycle including microservices and containerization",
+  "version": "2.1.0",
   "author": {
     "name": "Frappe Development Team"
   },
-  "keywords": ["frappe", "erpnext", "bench", "doctype", "development", "testing", "deployment", "performance", "security"],
-  "repository": "https://github.com/Venkateshvenki404224/frappe-apps-manager"
+  "keywords": ["frappe", "erpnext", "bench", "doctype", "development", "testing", "deployment", "performance", "security", "microservices", "microservice"],
+  "repository": "https://github.com/vyogotech/frappe-apps-manager"
 }

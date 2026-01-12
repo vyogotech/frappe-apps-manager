@@ -1,6 +1,6 @@
 # Frappe Apps Manager Plugin
 
-A comprehensive Claude Code plugin for Frappe Framework development with **95% SDLC coverage** - 15 commands, 10 agents, and 15 skills for complete Frappe/ERPNext development lifecycle.
+A comprehensive Claude Code plugin for Frappe Framework development with **95% SDLC coverage** - 15 commands, 10 agents, and 28 skills for complete Frappe/ERPNext development lifecycle including microservices and containerization.
 
 ## Quick Start
 
@@ -16,6 +16,14 @@ Then restart Claude Code and run `/help` to see all 15 Frappe commands!
 ## Overview
 
 The Frappe Apps Manager plugin extends Claude Code with specialized capabilities for building, deploying, and maintaining Frappe applications. Whether you're creating new apps, designing DocTypes, debugging issues, or deploying to production, this plugin provides expert assistance at every step.
+
+**What's New in v2.1.0:**
+- 🆕 11 new microservice skills (scaffolding, tenant isolation, container testing, and more)
+- 🆕 2 new containerization skills (Containerfile and compose.yml generation)
+- 🆕 Enhanced existing skills with microservice patterns
+- 🆕 Unified skill set for both standard Frappe and microservices
+- 🆕 Complete frappe-microservice-lib integration
+- 🆕 Automatic Containerfile and compose.yml generation during app creation
 
 **What's New in v2.0.0:**
 - 🆕 8 new commands (site management, testing, debugging, operations)
@@ -71,7 +79,7 @@ The Frappe Apps Manager plugin extends Claude Code with specialized capabilities
 - **frappe-integration** 🆕 - API and webhook integration
 - **frappe-data-engineer** 🆕 - Data migration and management
 
-### 15 Autonomous Skills
+### 28 Autonomous Skills
 
 **Core Development:**
 - **frappe-doctype-builder** - Generate DocType JSON structures
@@ -97,6 +105,23 @@ The Frappe Apps Manager plugin extends Claude Code with specialized capabilities
 - **frappe-performance-optimizer** 🆕 - Query and cache optimization
 - **frappe-web-form-builder** 🆕 - Public web forms
 - **frappe-documentation-generator** 🆕 - API documentation
+
+**Microservices (New in v2.1.0):**
+- **frappe-microservice-scaffold** 🆕 - Generate complete microservice boilerplate
+- **frappe-secure-endpoint** 🆕 - Generate tenant-aware API endpoints
+- **frappe-tenant-query** 🆕 - Generate tenant-isolated database queries
+- **frappe-controller** 🆕 - Generate DocType controllers for microservices
+- **frappe-document-hooks** 🆕 - Generate document lifecycle hooks
+- **frappe-tdd-tests** 🆕 - Generate TDD unit tests (Frappe-style)
+- **frappe-e2e-tests** 🆕 - Generate container-based E2E tests
+- **frappe-add-service-compose** 🆕 - Add service to dev-podman-compose.yml
+- **frappe-concept-explainer** 🆕 - Explain Frappe/ERPNext concepts
+- **frappe-microservice-pattern** 🆕 - Explain microservice architecture patterns
+- **frappe-microservice-validator** 🆕 - Validate microservice code patterns
+
+**Containerization (New in v2.1.0):**
+- **frappe-containerfile-generator** 🆕 - Generate Containerfile for Frappe apps (version 15)
+- **frappe-compose-dev-generator** 🆕 - Generate compose.yml for local development with vyogo's sne images
 
 ### Output Style
 
