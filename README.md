@@ -7,8 +7,8 @@ A comprehensive Claude Code plugin for Frappe Framework development with **95% S
 Install in 2 commands:
 
 ```bash
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin marketplace add vyogotech/frappe-apps-manager
+/plugin install frappe-apps-manager@vyogotech
 ```
 
 Then restart Claude Code and run `/help` to see all 15 Frappe commands!
@@ -145,10 +145,10 @@ Smart automation for common tasks:
 
 ```bash
 # 1. Add the marketplace
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
+/plugin marketplace add vyogotech/frappe-apps-manager
 
 # 2. Install the plugin
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin install frappe-apps-manager@vyogotech
 
 # 3. Restart Claude Code
 
@@ -163,13 +163,13 @@ Smart automation for common tasks:
 
 **Full GitHub URL:**
 ```bash
-/plugin marketplace add https://github.com/Venkateshvenki404224/frappe-apps-manager
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin marketplace add https://github.com/vyogotech/frappe-apps-manager
+/plugin install frappe-apps-manager@vyogotech
 ```
 
 **Local Development:**
 ```bash
-git clone https://github.com/Venkateshvenki404224/frappe-apps-manager.git
+git clone https://github.com/vyogotech/frappe-apps-manager.git
 /plugin marketplace add ./frappe-apps-manager
 /plugin install frappe-apps-manager@frappe-apps-manager
 ```
@@ -181,7 +181,7 @@ Add to your project's `.claude/settings.json`:
 {
   "pluginMarketplaces": [{
     "name": "frappe-marketplace",
-    "source": "Venkateshvenki404224/frappe-apps-manager"
+    "source": "vyogotech/frappe-apps-manager"
   }],
   "plugins": [{
     "name": "frappe-apps-manager",

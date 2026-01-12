@@ -113,7 +113,7 @@ This project follows [Semantic Versioning](https://semver.org/):
 
 ## Links
 
-- [GitHub Repository](https://github.com/Venkateshvenki404224/frappe-apps-manager)
+- [GitHub Repository](https://github.com/vyogotech/frappe-apps-manager)
 - [Installation Guide](INSTALLATION.md)
 - [What's New in v2.0.0](WHATS_NEW_V2.md)
 - [Development Guide](CLAUDE.md)

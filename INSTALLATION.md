@@ -13,10 +13,10 @@ The easiest way to install from GitHub:
 claude
 
 # 2. Add marketplace using GitHub shorthand
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
+/plugin marketplace add vyogotech/frappe-apps-manager
 
 # 3. Install the plugin
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin install frappe-apps-manager@vyogotech
 
 # 4. Restart Claude Code to load the plugin
 
@@ -35,8 +35,8 @@ claude
 **Format:** `owner/repository`
 
 ```bash
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin marketplace add vyogotech/frappe-apps-manager
+/plugin install frappe-apps-manager@vyogotech
 ```
 
 **Advantages:**
@@ -57,8 +57,8 @@ claude
 **Format:** `https://github.com/owner/repository`
 
 ```bash
-/plugin marketplace add https://github.com/Venkateshvenki404224/frappe-apps-manager
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin marketplace add https://github.com/vyogotech/frappe-apps-manager
+/plugin install frappe-apps-manager@vyogotech
 ```
 
 **Advantages:**
@@ -78,8 +78,8 @@ claude
 **Format:** `git@github.com:owner/repository.git`
 
 ```bash
-/plugin marketplace add git@github.com:Venkateshvenki404224/frappe-apps-manager.git
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin marketplace add git@github.com:vyogotech/frappe-apps-manager.git
+/plugin install frappe-apps-manager@vyogotech
 ```
 
 **Advantages:**
@@ -100,7 +100,7 @@ claude
 
 ```bash
 # Clone repository first
-git clone https://github.com/Venkateshvenki404224/frappe-apps-manager.git
+git clone https://github.com/vyogotech/frappe-apps-manager.git
 cd frappe-apps-manager
 
 # Then in Claude Code
@@ -134,7 +134,7 @@ claude
 
 In Claude Code, run:
 ```
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
+/plugin marketplace add vyogotech/frappe-apps-manager
 ```
 
 You'll see:
@@ -144,7 +144,7 @@ You'll see:
 
 **Step 3: Install the Plugin**
 ```
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin install frappe-apps-manager@vyogotech
 ```
 
 Select "Install now" when prompted.
@@ -203,7 +203,7 @@ Follow the prompts to create your first Frappe site!
   "pluginMarketplaces": [
     {
       "name": "frappe-marketplace",
-      "source": "Venkateshvenki404224/frappe-apps-manager"
+      "source": "vyogotech/frappe-apps-manager"
     }
   ],
   "plugins": [
@@ -242,8 +242,8 @@ Install for all your projects:
 
 ```bash
 # Add to user settings
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager --scope user
-/plugin install frappe-apps-manager@Venkateshvenki404224 --scope user
+/plugin marketplace add vyogotech/frappe-apps-manager --scope user
+/plugin install frappe-apps-manager@vyogotech --scope user
 ```
 
 **Benefits:**
@@ -262,7 +262,7 @@ Install for all your projects:
 
 Should show:
 ```
-frappe-marketplace (Venkateshvenki404224/frappe-apps-manager)
+frappe-marketplace (vyogotech/frappe-apps-manager)
 ```
 
 ### Check Installed Plugins
@@ -273,7 +273,7 @@ frappe-marketplace (Venkateshvenki404224/frappe-apps-manager)
 Select "Manage Plugins" to see:
 ```
 frappe-apps-manager (v2.0.0) - Enabled
-  Source: Venkateshvenki404224/frappe-apps-manager
+  Source: vyogotech/frappe-apps-manager
   Commands: 15
   Agents: 10
   Skills: 15
@@ -313,7 +313,7 @@ Should show "Frappe Conventional Commits" option.
 /plugin marketplace list
 
 # Try full URL
-/plugin marketplace add https://github.com/Venkateshvenki404224/frappe-apps-manager
+/plugin marketplace add https://github.com/vyogotech/frappe-apps-manager
 ```
 
 **Problem:** "Network error"
@@ -323,7 +323,7 @@ Should show "Frappe Conventional Commits" option.
 ping github.com
 
 # Try again
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
+/plugin marketplace add vyogotech/frappe-apps-manager
 ```
 
 **Problem:** "Permission denied"
@@ -333,7 +333,7 @@ ping github.com
 ssh -T git@github.com
 
 # Use SSH URL
-/plugin marketplace add git@github.com:Venkateshvenki404224/frappe-apps-manager.git
+/plugin marketplace add git@github.com:vyogotech/frappe-apps-manager.git
 ```
 
 ### Commands Not Showing
@@ -354,8 +354,8 @@ claude
 **Solution:**
 ```bash
 # Reinstall plugin
-/plugin uninstall frappe-apps-manager@Venkateshvenki404224
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin uninstall frappe-apps-manager@vyogotech
+/plugin install frappe-apps-manager@vyogotech
 
 # Restart Claude Code
 ```
@@ -374,10 +374,10 @@ claude
 **Get latest version:**
 ```bash
 # Uninstall current
-/plugin uninstall frappe-apps-manager@Venkateshvenki404224
+/plugin uninstall frappe-apps-manager@vyogotech
 
 # Reinstall (gets latest)
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin install frappe-apps-manager@vyogotech
 
 # Restart Claude Code
 ```
@@ -388,19 +388,19 @@ claude
 
 ### Project Scope (Default)
 ```bash
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
+/plugin marketplace add vyogotech/frappe-apps-manager
 # Available only in current project
 ```
 
 ### User Scope (All Projects)
 ```bash
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager --scope user
+/plugin marketplace add vyogotech/frappe-apps-manager --scope user
 # Available in all your projects
 ```
 
 ### Local Scope (Project-Specific)
 ```bash
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager --scope local
+/plugin marketplace add vyogotech/frappe-apps-manager --scope local
 # Only for you in this project
 ```
 
@@ -410,21 +410,21 @@ claude
 
 ### Remove Plugin
 ```bash
-/plugin uninstall frappe-apps-manager@Venkateshvenki404224
+/plugin uninstall frappe-apps-manager@vyogotech
 ```
 
 ### Remove Marketplace
 ```bash
-/plugin marketplace remove Venkateshvenki404224
+/plugin marketplace remove vyogotech
 ```
 
 ### Complete Removal
 ```bash
 # Uninstall plugin
-/plugin uninstall frappe-apps-manager@Venkateshvenki404224
+/plugin uninstall frappe-apps-manager@vyogotech
 
 # Remove marketplace
-/plugin marketplace remove Venkateshvenki404224
+/plugin marketplace remove vyogotech
 
 # Restart Claude Code
 exit
@@ -439,19 +439,19 @@ claude
 
 ```bash
 # Quickest method
-/plugin marketplace add Venkateshvenki404224/frappe-apps-manager
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin marketplace add vyogotech/frappe-apps-manager
+/plugin install frappe-apps-manager@vyogotech
 
 # Full URL method
-/plugin marketplace add https://github.com/Venkateshvenki404224/frappe-apps-manager
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin marketplace add https://github.com/vyogotech/frappe-apps-manager
+/plugin install frappe-apps-manager@vyogotech
 
 # SSH method (for contributors)
-/plugin marketplace add git@github.com:Venkateshvenki404224/frappe-apps-manager.git
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin marketplace add git@github.com:vyogotech/frappe-apps-manager.git
+/plugin install frappe-apps-manager@vyogotech
 
 # Local method (for development)
-git clone https://github.com/Venkateshvenki404224/frappe-apps-manager.git
+git clone https://github.com/vyogotech/frappe-apps-manager.git
 /plugin marketplace add ./frappe-apps-manager
 /plugin install frappe-apps-manager@frappe-apps-manager
 ```
@@ -466,20 +466,20 @@ git clone https://github.com/Venkateshvenki404224/frappe-apps-manager.git
 /plugin
 
 # Enable/disable
-/plugin enable frappe-apps-manager@Venkateshvenki404224
-/plugin disable frappe-apps-manager@Venkateshvenki404224
+/plugin enable frappe-apps-manager@vyogotech
+/plugin disable frappe-apps-manager@vyogotech
 
 # Update plugin
-/plugin uninstall frappe-apps-manager@Venkateshvenki404224
-/plugin install frappe-apps-manager@Venkateshvenki404224
+/plugin uninstall frappe-apps-manager@vyogotech
+/plugin install frappe-apps-manager@vyogotech
 ```
 
 ---
 
 ## Support
 
-**Issues:** https://github.com/Venkateshvenki404224/frappe-apps-manager/issues
-**Discussions:** https://github.com/Venkateshvenki404224/frappe-apps-manager/discussions
+**Issues:** https://github.com/vyogotech/frappe-apps-manager/issues
+**Discussions:** https://github.com/vyogotech/frappe-apps-manager/discussions
 **Documentation:** See [README.md](README.md) and [CLAUDE.md](CLAUDE.md)
 
 ---
@@ -498,7 +498,7 @@ All with **real patterns from ERPNext** and **95% SDLC coverage**!
 
 ---
 
-**Repository:** https://github.com/Venkateshvenki404224/frappe-apps-manager
+**Repository:** https://github.com/vyogotech/frappe-apps-manager
 **Version:** 2.0.0
 **License:** MIT
 **Status:** Production Ready 🚀

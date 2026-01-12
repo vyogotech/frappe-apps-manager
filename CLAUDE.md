@@ -366,7 +366,7 @@ For team-wide plugin adoption, configure plugins at the repository level:
      "pluginMarketplaces": [
        {
          "name": "frappe-marketplace",
-         "source": "https://github.com/Venkateshvenki404224/frappe-marketplace"
+         "source": "https://github.com/vyogotech/frappe-marketplace"
        }
      ],
      "plugins": [
@@ -392,10 +392,10 @@ Marketplaces can be added from multiple sources:
 /plugin marketplace add ./frappe-marketplace
 
 # Git repository (for distribution)
-/plugin marketplace add https://github.com/Venkateshvenki404224/frappe-marketplace
+/plugin marketplace add https://github.com/vyogotech/frappe-marketplace
 
 # Organization/repo format (GitHub shorthand)
-/plugin marketplace add Venkateshvenki404224/frappe-marketplace
+/plugin marketplace add vyogotech/frappe-marketplace
 ```
 
 ### Version Management
