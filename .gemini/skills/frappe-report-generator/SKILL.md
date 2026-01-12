@@ -1,0 +1,1 @@
+/Users/varkrish/personal/1frappe_ecosystem/frappe-apps-manager/frappe-apps-manager/skills/frappe-report-generator/SKILL.md

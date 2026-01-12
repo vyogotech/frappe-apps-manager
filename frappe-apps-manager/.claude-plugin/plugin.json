@@ -3,7 +3,7 @@
   "description": "Comprehensive Frappe Framework development platform with 95% SDLC coverage - 15 commands, 10 agents, 28 skills for complete Frappe/ERPNext development lifecycle including microservices and containerization",
   "version": "2.1.0",
   "author": {
-    "name": "Frappe Development Team"
+    "name": "Frappe Development Team + Vyogo Technologies"
   },
   "keywords": ["frappe", "erpnext", "bench", "doctype", "development", "testing", "deployment", "performance", "security", "microservices", "microservice"],
   "repository": "https://github.com/vyogotech/frappe-apps-manager"
