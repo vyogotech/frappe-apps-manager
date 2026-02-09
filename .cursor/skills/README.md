@@ -4,12 +4,12 @@ This directory contains Cursor-compatible skills for Frappe development.
 
 ## Structure
 
-Skills in this directory are **symbolic links** to the main skills located in:
+Skills in this directory are **copies** of the main skills located in:
 ```
 frappe-apps-manager/skills/
 ```
 
-This avoids duplication and ensures both Claude Code and Cursor use the same skill definitions.
+This ensures both Claude Code and Cursor use the same skill definitions, and that the content displays correctly on GitHub.
 
 ## Usage
 
@@ -25,35 +25,25 @@ Type `/` in Agent chat and search for the skill name:
 
 ### Available Skills
 
-All 28 skills from `frappe-apps-manager/skills/` are available here via symlinks.
+All 28 skills from `frappe-apps-manager/skills/` are available here.
 
 ## Maintenance
 
-**Do NOT edit files in this directory directly!**
-
-All edits should be made in:
+The **source of truth** for all skills is:
 ```
 frappe-apps-manager/skills/<skill-name>/SKILL.md
 ```
 
-The symlinks will automatically reflect the changes.
-
-## Recreating Symlinks
-
-If symlinks are broken, recreate them with:
+After editing skills in the source directory, run the sync script to update copies:
 ```bash
-cd frappe-apps-manager
-for skill in frappe-apps-manager/skills/*/; do
-  skill_name=$(basename "$skill")
-  if [ -f "$skill/SKILL.md" ]; then
-    mkdir -p ".cursor/skills/$skill_name"
-    ln -sf "../../frappe-apps-manager/skills/$skill_name/SKILL.md" ".cursor/skills/$skill_name/SKILL.md"
-  fi
-done
+./sync-skills.sh
 ```
+
+**Do NOT edit files in this directory directly** - your changes will be overwritten on the next sync.
 
 ## Compatibility
 
-- ✅ Cursor IDE (auto-discovers from `.cursor/skills/`)
-- ✅ Claude Code (uses `frappe-apps-manager/skills/`)
-- ✅ Single source of truth (no duplication)
+- Cursor IDE (auto-discovers from `.cursor/skills/`)
+- Claude Code (uses `frappe-apps-manager/skills/`)
+- Gemini CLI (uses `.gemini/skills/`)
+- Single source of truth with sync script

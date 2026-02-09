@@ -1,6 +1,6 @@
-# Setup Cursor Skills Symlinks
+# Setup Cursor Skills
 
-This document explains how to set up symbolic links so Cursor can use the same skills as Claude Code, avoiding duplication.
+This document explains how Cursor uses the same skills as Claude Code.
 
 ## Structure
 
@@ -15,93 +15,44 @@ frappe-apps-manager/
 │       ├── frappe-report-generator/
 │       │   └── SKILL.md
 │       └── ...
-└── .cursor/                     # Cursor skills (symlinks)
+└── .cursor/                     # Cursor skills (copies)
     └── skills/
         ├── frappe-report-generator/
-        │   └── SKILL.md -> ../../frappe-apps-manager/skills/frappe-report-generator/SKILL.md
+        │   └── SKILL.md
         └── ...
 ```
 
-## Setup Instructions
+## How It Works
 
-### Option 1: Use the Setup Script
+Skills are maintained in `frappe-apps-manager/skills/` (the source of truth) and copied to `.cursor/skills/` using the sync script.
 
-```bash
-cd frappe-apps-manager
-chmod +x setup-cursor-symlinks.sh
-./setup-cursor-symlinks.sh
-```
+## Syncing Skills
 
-### Option 2: Manual Setup
+After adding or modifying skills in the source directory:
 
 ```bash
-cd frappe-apps-manager
-mkdir -p .cursor/skills
-
-# Create symlinks for each skill
-for skill_dir in frappe-apps-manager/skills/*/; do
-    skill_name=$(basename "$skill_dir")
-    if [ -f "$skill_dir/SKILL.md" ]; then
-        mkdir -p ".cursor/skills/$skill_name"
-        ln -sf "../../frappe-apps-manager/skills/$skill_name/SKILL.md" \
-           ".cursor/skills/$skill_name/SKILL.md"
-        echo "✓ Linked: $skill_name"
-    fi
-done
+./sync-skills.sh
 ```
 
-### Option 3: Python Script
-
-```python
-import os
-from pathlib import Path
-
-base = Path("frappe-apps-manager")
-cursor_skills = base / ".cursor" / "skills"
-source_skills = base / "frappe-apps-manager" / "skills"
-
-cursor_skills.mkdir(parents=True, exist_ok=True)
-
-for skill_dir in source_skills.iterdir():
-    if skill_dir.is_dir() and (skill_dir / "SKILL.md").exists():
-        skill_name = skill_dir.name
-        target_dir = cursor_skills / skill_name
-        target_dir.mkdir(exist_ok=True)
-        
-        symlink = target_dir / "SKILL.md"
-        source = Path("../../frappe-apps-manager/skills") / skill_name / "SKILL.md"
-        
-        if symlink.exists() or symlink.is_symlink():
-            symlink.unlink()
-        
-        symlink.symlink_to(source)
-        print(f"✓ Linked: {skill_name}")
-
-print(f"\nTotal symlinks: {len(list(cursor_skills.glob('*/SKILL.md')))}")
-```
+This copies all skills to both `.cursor/skills/` and `.gemini/skills/`.
 
 ## Verification
 
-After setup, verify symlinks:
+After syncing, verify the copies:
 
 ```bash
-# Check if symlinks exist
-ls -la .cursor/skills/*/SKILL.md
+# Check if skill files exist with actual content
+head -5 .cursor/skills/frappe-report-generator/SKILL.md
 
-# Count symlinks
-find .cursor/skills -type l | wc -l
-
-# Test one symlink
-readlink .cursor/skills/frappe-report-generator/SKILL.md
-# Should show: ../../frappe-apps-manager/skills/frappe-report-generator/SKILL.md
+# Count skills
+ls .cursor/skills/*/SKILL.md | wc -l
 ```
 
 ## Benefits
 
 1. **Single Source of Truth**: Skills are defined once in `frappe-apps-manager/skills/`
-2. **No Duplication**: Changes automatically reflect in both Claude and Cursor
-3. **Easy Maintenance**: Edit skills in one place
-4. **Version Control**: Only one set of files to track
+2. **Works on GitHub**: Files contain actual content (not path references)
+3. **Easy Maintenance**: Edit skills in one place, sync with one command
 
 ## Maintenance
 
@@ -110,26 +61,11 @@ readlink .cursor/skills/frappe-report-generator/SKILL.md
 frappe-apps-manager/skills/<skill-name>/SKILL.md
 ```
 
-The symlinks will automatically reflect changes.
-
-## Recreating Symlinks
-
-If symlinks are broken (e.g., after moving directories), just run the setup script again.
-
-## Git Considerations
-
-Symlinks are tracked by Git, but you may need to configure Git to handle them properly:
-
-```bash
-# Check if symlinks are tracked
-git ls-files -s .cursor/skills/
-
-# If needed, ensure Git follows symlinks
-git config core.symlinks true
-```
+Then run the sync script to propagate changes.
 
 ## Platform Support
 
-- ✅ **Claude Code**: Uses `frappe-apps-manager/skills/` directly
-- ✅ **Cursor IDE**: Uses `.cursor/skills/` (symlinks to source)
-- ✅ **Both**: Share the same skill definitions via symlinks
+- **Claude Code**: Uses `frappe-apps-manager/skills/` directly
+- **Cursor IDE**: Uses `.cursor/skills/` (copies)
+- **Gemini CLI**: Uses `.gemini/skills/` (copies)
+- **All**: Share the same skill definitions via sync script

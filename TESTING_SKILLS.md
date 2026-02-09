@@ -92,17 +92,17 @@ Generate a DocType for Project Management with fields for name, start date, and 
 
 The agent should automatically use `frappe-doctype-builder` skill.
 
-### 4. Verify Symlinks Work
+### 4. Verify Skills Exist
 
 ```bash
-# Check if symlinks exist
-ls -la .cursor/skills/*/SKILL.md | head -5
+# Check if skill files exist
+ls .cursor/skills/*/SKILL.md | head -5
 
 # Test reading a skill
 head -10 .cursor/skills/frappe-report-generator/SKILL.md
 ```
 
-Should show the skill content, not a broken link.
+Should show the skill content (YAML frontmatter with name and description).
 
 ## Testing on Gemini CLI
 
@@ -145,11 +145,11 @@ Gemini should:
 2. Activate the skill
 3. Generate the report following the skill's patterns
 
-### 5. Verify Symlinks Work
+### 5. Verify Skills Exist
 
 ```bash
-# Check symlinks
-ls -la .gemini/skills/*/SKILL.md | head -5
+# Check skill files
+ls .gemini/skills/*/SKILL.md | head -5
 
 # Test reading
 head -10 .gemini/skills/frappe-report-generator/SKILL.md
@@ -253,14 +253,15 @@ For optimized skills, verify:
 - Restart Claude Code
 
 **Cursor IDE:**
-- Check symlinks: `ls -la .cursor/skills/`
-- Verify symlinks point to correct source
-- Check Cursor version (skills require nightly channel)
+- Check skill files: `ls .cursor/skills/`
+- Verify files have content: `head -5 .cursor/skills/frappe-doctype-builder/SKILL.md`
+- Re-sync if needed: `./sync-skills.sh`
 
 **Gemini CLI:**
 - Verify skills are enabled: `/settings`
-- Check symlinks: `ls -la .gemini/skills/`
+- Check skill files: `ls .gemini/skills/`
 - Check config: `cat .gemini/config.json`
+- Re-sync if needed: `./sync-skills.sh`
 
 ### Skills Not Invoking
 

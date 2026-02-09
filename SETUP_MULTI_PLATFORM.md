@@ -1,14 +1,14 @@
 # Multi-Platform Skills Setup
 
-This document explains how to set up symbolic links so **Claude Code**, **Cursor IDE**, and **Gemini CLI** can all use the same skills without duplication.
+This document explains how **Claude Code**, **Cursor IDE**, and **Gemini CLI** all use the same skills.
 
 ## Overview
 
 All three platforms use the same skill format (Agent Skills open standard), but discover skills from different directories:
 
 - **Claude Code**: `frappe-apps-manager/skills/` (direct)
-- **Cursor IDE**: `.cursor/skills/` (symlinks)
-- **Gemini CLI**: `.gemini/skills/` (symlinks)
+- **Cursor IDE**: `.cursor/skills/` (copies)
+- **Gemini CLI**: `.gemini/skills/` (copies)
 
 ## Structure
 
@@ -23,56 +23,32 @@ frappe-apps-manager/
 │       ├── frappe-report-generator/
 │       │   └── SKILL.md
 │       └── ...
-├── .cursor/                     # Cursor skills (symlinks)
+├── .cursor/                     # Cursor skills (copies)
 │   └── skills/
 │       ├── frappe-report-generator/
-│       │   └── SKILL.md -> ../../frappe-apps-manager/skills/frappe-report-generator/SKILL.md
+│       │   └── SKILL.md
 │       └── ...
-└── .gemini/                     # Gemini CLI skills (symlinks)
-    └── skills/
-        ├── frappe-report-generator/
-        │   └── SKILL.md -> ../../frappe-apps-manager/skills/frappe-report-generator/SKILL.md
-        └── ...
+├── .gemini/                     # Gemini CLI skills (copies)
+│   └── skills/
+│       ├── frappe-report-generator/
+│       │   └── SKILL.md
+│       └── ...
+└── sync-skills.sh               # Script to sync copies
 ```
 
-## Quick Setup
+## How It Works
 
-### Option 1: Automated Script (Recommended)
+The **source of truth** for all skills is `frappe-apps-manager/skills/`. The `sync-skills.sh` script copies skills to `.cursor/skills/` and `.gemini/skills/` so each platform can discover them.
+
+### Syncing Skills
+
+After adding, modifying, or removing skills in the source directory:
 
 ```bash
-cd frappe-apps-manager
-chmod +x setup-all-symlinks.sh
-./setup-all-symlinks.sh
+./sync-skills.sh
 ```
 
-This creates symlinks for both Cursor and Gemini CLI.
-
-### Option 2: Manual Setup
-
-```bash
-cd frappe-apps-manager
-mkdir -p .cursor/skills .gemini/skills
-
-# Create symlinks for Cursor
-for skill_dir in frappe-apps-manager/skills/*/; do
-    skill_name=$(basename "$skill_dir")
-    if [ -f "$skill_dir/SKILL.md" ]; then
-        mkdir -p ".cursor/skills/$skill_name"
-        ln -sf "../../frappe-apps-manager/skills/$skill_name/SKILL.md" \
-           ".cursor/skills/$skill_name/SKILL.md"
-    fi
-done
-
-# Create symlinks for Gemini CLI
-for skill_dir in frappe-apps-manager/skills/*/; do
-    skill_name=$(basename "$skill_dir")
-    if [ -f "$skill_dir/SKILL.md" ]; then
-        mkdir -p ".gemini/skills/$skill_name"
-        ln -sf "../../frappe-apps-manager/skills/$skill_name/SKILL.md" \
-           ".gemini/skills/$skill_name/SKILL.md"
-    fi
-done
-```
+This copies all skills to both target directories and cleans up any stale skills.
 
 ## Platform-Specific Usage
 
@@ -80,8 +56,8 @@ done
 
 ```bash
 # Install plugin
-/plugin marketplace add ./frappe-apps-manager
-/plugin install frappe-apps-manager@frappe-marketplace
+/plugin marketplace add vyogotech/frappe-apps-manager
+/plugin install frappe-apps-manager@vyogotech
 
 # Skills are automatically available
 # Use commands: /frappe-new-app, /frappe-new-doctype, etc.
@@ -111,38 +87,30 @@ done
 # Manage skills in interactive session
 /skills list
 /skills enable frappe-report-generator
-
-# Note: Terminal command may not be available in all versions
-# Use interactive /skills commands instead
 ```
 
 ## Verification
 
-After setup, verify symlinks:
+After syncing, verify the copies:
 
 ```bash
-# Check Cursor symlinks
-ls -la .cursor/skills/*/SKILL.md | head -5
+# Check Cursor skills
+ls .cursor/skills/*/SKILL.md | wc -l
 
-# Check Gemini CLI symlinks
-ls -la .gemini/skills/*/SKILL.md | head -5
+# Check Gemini CLI skills
+ls .gemini/skills/*/SKILL.md | wc -l
 
-# Count symlinks
-echo "Cursor: $(find .cursor/skills -type l | wc -l)"
-echo "Gemini: $(find .gemini/skills -type l | wc -l)"
-
-# Test one symlink
-readlink .gemini/skills/frappe-report-generator/SKILL.md
-# Should show: ../../frappe-apps-manager/skills/frappe-report-generator/SKILL.md
+# Verify content (should show actual skill content, not paths)
+head -5 .gemini/skills/frappe-report-generator/SKILL.md
+head -5 .cursor/skills/frappe-report-generator/SKILL.md
 ```
 
 ## Benefits
 
 1. **Single Source of Truth**: Skills defined once in `frappe-apps-manager/skills/`
-2. **No Duplication**: 28 skills, not 84 files (28 × 3 platforms)
-3. **Automatic Sync**: Changes reflect in all platforms instantly
-4. **Easy Maintenance**: Edit skills in one place
-5. **Version Control**: Only one set of files to track
+2. **Works on GitHub**: Copies contain actual content (not symlink paths)
+3. **Works on Any Clone**: No machine-specific paths or setup scripts needed
+4. **Easy Maintenance**: Edit skills in one place, run `./sync-skills.sh`
 
 ## Maintenance
 
@@ -151,34 +119,18 @@ readlink .gemini/skills/frappe-report-generator/SKILL.md
 frappe-apps-manager/skills/<skill-name>/SKILL.md
 ```
 
-The symlinks will automatically reflect changes in all platforms.
-
-## Recreating Symlinks
-
-If symlinks are broken (e.g., after moving directories), just run:
+Then run the sync script:
 ```bash
-./setup-all-symlinks.sh
-```
-
-## Git Considerations
-
-Symlinks are tracked by Git. Ensure Git handles them properly:
-
-```bash
-# Check if symlinks are tracked
-git ls-files -s .cursor/skills/ .gemini/skills/
-
-# If needed, ensure Git follows symlinks
-git config core.symlinks true
+./sync-skills.sh
 ```
 
 ## Platform Support Summary
 
-| Platform | Discovery Path | Format | Status |
+| Platform | Discovery Path | Method | Status |
 |----------|---------------|--------|--------|
-| **Claude Code** | `frappe-apps-manager/skills/` | Direct | ✅ Native |
-| **Cursor IDE** | `.cursor/skills/` | Symlinks | ✅ Supported |
-| **Gemini CLI** | `.gemini/skills/` | Symlinks | ✅ Supported |
+| **Claude Code** | `frappe-apps-manager/skills/` | Direct | Native |
+| **Cursor IDE** | `.cursor/skills/` | Copies | Supported |
+| **Gemini CLI** | `.gemini/skills/` | Copies | Supported |
 
 All platforms use the [Agent Skills open standard](https://agentskills.io), ensuring compatibility.
 

@@ -4,12 +4,12 @@ This directory contains Gemini CLI-compatible skills for Frappe development.
 
 ## Structure
 
-Skills in this directory are **symbolic links** to the main skills located in:
+Skills in this directory are **copies** of the main skills located in:
 ```
 frappe-apps-manager/skills/
 ```
 
-This avoids duplication and ensures Claude Code, Cursor, and Gemini CLI all use the same skill definitions.
+This ensures Claude Code, Cursor, and Gemini CLI all use the same skill definitions, and that the content displays correctly on GitHub.
 
 ## Enabling Skills Feature
 
@@ -63,7 +63,7 @@ Once enabled, Gemini CLI automatically discovers skills from `.gemini/skills/` d
 ### Skill Discovery Tiers
 
 Gemini CLI discovers skills from:
-1. **Project Skills** (`.gemini/skills/`) - This directory ✓
+1. **Project Skills** (`.gemini/skills/`) - This directory
 2. **User Skills** (`~/.gemini/skills/`) - Personal skills
 3. **Extension Skills** - From installed extensions
 
@@ -71,7 +71,7 @@ Precedence: Project > User > Extension
 
 ## Available Skills
 
-All 28 skills from `frappe-apps-manager/skills/` are available here via symlinks:
+All 28 skills from `frappe-apps-manager/skills/` are available here:
 
 - `frappe-report-generator` - Generate reports
 - `frappe-doctype-builder` - Generate DocTypes
@@ -81,14 +81,26 @@ All 28 skills from `frappe-apps-manager/skills/` are available here via symlinks
 
 ## Maintenance
 
-**Do NOT edit files in this directory directly!**
-
-All edits should be made in:
+The **source of truth** for all skills is:
 ```
 frappe-apps-manager/skills/<skill-name>/SKILL.md
 ```
 
-The symlinks will automatically reflect the changes.
+After editing skills in the source directory, run the sync script to update copies:
+```bash
+./sync-skills.sh
+```
+
+**Do NOT edit files in this directory directly** - your changes will be overwritten on the next sync.
+
+## Syncing After Changes
+
+If skills have been added, modified, or removed in the source directory:
+```bash
+./sync-skills.sh
+```
+
+This copies all skills to both `.cursor/skills/` and `.gemini/skills/`.
 
 ## Skill Format
 
@@ -99,20 +111,12 @@ Skills follow the [Agent Skills open standard](https://geminicli.com/docs/cli/sk
 - Markdown instructions in the body
 - Optional: `scripts/`, `references/`, `assets/` subdirectories
 
-## Recreating Symlinks
-
-If symlinks are broken, recreate them with:
-```bash
-cd frappe-apps-manager
-./setup-all-symlinks.sh
-```
-
 ## Compatibility
 
-- ✅ **Claude Code**: Uses `frappe-apps-manager/skills/` directly
-- ✅ **Cursor IDE**: Uses `.cursor/skills/` (symlinks)
-- ✅ **Gemini CLI**: Uses `.gemini/skills/` (symlinks)
-- ✅ **All platforms**: Share the same skill definitions via symlinks
+- **Claude Code**: Uses `frappe-apps-manager/skills/` directly
+- **Cursor IDE**: Uses `.cursor/skills/` (copies)
+- **Gemini CLI**: Uses `.gemini/skills/` (copies)
+- **All platforms**: Share the same skill definitions
 
 ## References
 

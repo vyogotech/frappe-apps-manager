@@ -106,27 +106,22 @@ If multiple skills share the same name, the higher-precedence location wins.
 ### Skills Not Appearing
 
 1. **Check if feature is enabled**: Try `/skills list` in interactive session
-2. **Verify symlinks exist**: `ls -la .gemini/skills/`
+2. **Verify skills exist**: `ls .gemini/skills/`
 3. **Check skill format**: Each skill needs a `SKILL.md` file with YAML frontmatter
 4. **Reload skills**: `/skills reload` in interactive session
 
-### Symlinks Not Working
+### Skills Out of Sync
 
-If symlinks aren't being discovered:
+If skills in `.gemini/skills/` are outdated or missing:
 
-1. Verify symlinks are valid:
+1. Check if source skills exist:
    ```bash
-   readlink .gemini/skills/frappe-report-generator/SKILL.md
+   ls frappe-apps-manager/skills/
    ```
 
-2. Check if target exists:
+2. Re-sync skills:
    ```bash
-   test -f frappe-apps-manager/skills/frappe-report-generator/SKILL.md && echo "OK" || echo "Missing"
-   ```
-
-3. Recreate symlinks:
-   ```bash
-   ./setup-all-symlinks.sh
+   ./sync-skills.sh
    ```
 
 ## Example Workflow

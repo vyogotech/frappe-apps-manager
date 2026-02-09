@@ -403,8 +403,8 @@ After installing the plugin, you may need to restart Claude Code for commands to
 ### Skills Not Working
 
 - **Claude Code**: Verify plugin is installed and skills directory exists
-- **Cursor IDE**: Check symlinks in `.cursor/skills/` are valid
-- **Gemini CLI**: Enable experimental skills in `/settings`
+- **Cursor IDE**: Check skill files exist in `.cursor/skills/` (re-sync with `./sync-skills.sh`)
+- **Gemini CLI**: Enable experimental skills in `/settings`, verify files in `.gemini/skills/`
 
 ### Hooks Not Triggering
 
