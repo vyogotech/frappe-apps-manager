@@ -23,7 +23,7 @@ Create secure API endpoints for Frappe applications. Supports both standard Frap
 def get_customer_details(customer_name):
     if not frappe.has_permission("Customer", "read"):
         frappe.throw(_("Not permitted"), frappe.PermissionError)
-    
+
     customer = frappe.get_doc("Customer", customer_name)
     return {
         "name": customer.name,
@@ -36,55 +36,62 @@ def public_api():
     return {"message": "Public data"}
 ```
 
-### 2. REST Patterns
+### 2. Microservice Auto-CRUD (Recommended)
 
-**GET with pagination:**
 ```python
-@frappe.whitelist()
-def get_items(filters=None, limit=20, page=1):
-    filters = frappe.parse_json(filters) if isinstance(filters, str) else filters or {}
-    if not frappe.has_permission("Item", "read"):
-        frappe.throw(_("Not permitted"), frappe.PermissionError)
-    
-    items = frappe.get_all("Item", filters=filters, limit=limit, limit_start=(page-1)*limit)
-    return {"items": items, "total": frappe.db.count("Item", filters=filters)}
+# Generates all CRUD endpoints automatically:
+app.register_resource("Sales Order")
+# GET    /api/resource/Sales Order        → list (paginated, filterable)
+# POST   /api/resource/Sales Order        → create
+# GET    /api/resource/Sales Order/<name>  → get one
+# PUT    /api/resource/Sales Order/<name>  → update
+# DELETE /api/resource/Sales Order/<name>  → delete
+
+# With custom handlers for specific operations:
+app.register_resource("Sales Order", custom_handlers={
+    'list': my_custom_list,
+    'post': my_custom_create,
+})
 ```
 
-**POST:**
-```python
-@frappe.whitelist()
-def create_order(order_data):
-    data = frappe.parse_json(order_data) if isinstance(order_data, str) else order_data
-    if not data.get("customer"):
-        frappe.throw(_("Customer is required"))
-    
-    so = frappe.get_doc({"doctype": "Sales Order", **data})
-    so.insert()
-    return {"success": True, "name": so.name}
-```
+All register_resource endpoints are secured, tenant-scoped, and have Swagger docs.
 
-**PUT/DELETE:** Similar pattern - get doc, update/delete, return result
-
-### 3. Microservice API
+### 3. Microservice Custom Endpoints
 
 ```python
 @app.secure_route('/api/customers', methods=['GET'])
 def list_customers(user):
-    tenant_id = get_current_tenant_id()
-    app.set_tenant_id(tenant_id)
-    customers = app.tenant_db.get_all('Customer', filters=request.args.get('filters', {}))
+    """user and g.tenant_id set automatically by secure_route."""
+    status = request.args.get('status')
+    filters = {'status': status} if status else {}
+    customers = app.tenant_db.get_all('Customer', filters=filters)
     return {"data": customers}
 
 @app.secure_route('/api/customers', methods=['POST'])
 def create_customer(user):
-    tenant_id = get_current_tenant_id()
-    app.set_tenant_id(tenant_id)
-    customer = app.tenant_db.insert_doc('Customer', request.json)
-    return {"success": True, "data": customer.as_dict()}, 201
+    data = request.json
+    if not data or not data.get('customer_name'):
+        return {"error": "customer_name is required"}, 400
+    doc = app.tenant_db.insert_doc('Customer', data)
+    return {"name": doc.name}, 201
+
+@app.secure_route('/api/customers/<name>', methods=['PUT'])
+def update_customer(user, name):
+    data = request.json
+    if not data:
+        return {"error": "Request body required"}, 400
+    doc = app.tenant_db.update_doc('Customer', name, data)
+    return {"name": doc.name}
+
+@app.secure_route('/api/customers/<name>', methods=['DELETE'])
+def delete_customer(user, name):
+    app.tenant_db.delete_doc('Customer', name)
+    return {"success": True}
 ```
 
 ### 4. Error Handling
 
+Standard Frappe:
 ```python
 @frappe.whitelist()
 def api_with_errors(param):
@@ -92,53 +99,82 @@ def api_with_errors(param):
         if not param:
             frappe.throw(_("Required"), frappe.ValidationError)
         return {"success": True, "data": process(param)}
-    except frappe.ValidationError as e:
-        return {"success": False, "error": str(e), "code": "VALIDATION_ERROR"}, 400
-    except frappe.PermissionError as e:
-        return {"success": False, "error": str(e), "code": "PERMISSION_ERROR"}, 403
-    except frappe.DoesNotExistError as e:
-        return {"success": False, "error": str(e), "code": "NOT_FOUND"}, 404
+    except frappe.ValidationError:
+        raise
     except Exception as e:
         frappe.log_error(f"API error: {e}")
-        return {"success": False, "error": "Internal error", "code": "INTERNAL_ERROR"}, 500
+        return {"success": False, "error": "Internal error"}, 500
 ```
 
-### 5. Authentication
-
-**Session-based:**
+Microservice (automatic via secure_route):
 ```python
-@frappe.whitelist()
-def authenticated_api():
-    return {"user": frappe.session.user}
+@app.secure_route('/api/process', methods=['POST'])
+def process(user):
+    # secure_route auto-handles these exceptions:
+    # PermissionError → 403
+    # DoesNotExistError → 404
+    # ValidationError/ValueError → 400
+    # Any other Exception → 500 (with auto-rollback)
+    doc = app.tenant_db.get_doc('Sales Order', request.json['name'])
+    doc.status = 'Processed'
+    doc.save()
+    return {"status": doc.status}
 ```
 
-**API Key:**
+### 5. Authentication Methods
+
+**Microservice -- secure_route (automatic):**
 ```python
-@frappe.whitelist()
-def api_key_auth():
-    api_key = frappe.get_request_header("X-API-Key")
-    if not api_key:
-        frappe.throw(_("API Key required"), frappe.AuthenticationError)
-    # Validate key
-    return {"authenticated": True}
+@app.secure_route('/api/data', methods=['GET'])
+def get_data(user):
+    # Auth handled: Bearer token, SID cookie, X-Internal-Token
+    return {"user": user, "data": app.tenant_db.get_all('DocType')}
+```
+
+**Service-to-service:**
+```python
+# Caller
+import requests
+resp = requests.get(
+    'http://orders-service:8000/api/orders',
+    headers={"X-Internal-Token": os.getenv("INTERNAL_SERVICE_TOKEN")}
+)
+
+# Central Site client (built-in)
+user = app.central.get_doc('User', 'admin@example.com')
+users = app.central.get_list('User', filters={'enabled': 1})
+result = app.central.call('frappe.client.get_count', {'doctype': 'User'})
+```
+
+### 6. Pagination (register_resource)
+
+List endpoints from `register_resource` support Frappe-style query params:
+- `fields` -- comma-separated fields to return
+- `limit` / `limit_page_length` -- page size (default 20)
+- `offset` / `limit_start` -- row offset
+- `order_by` -- sort order (default: `modified desc`)
+- All other query params become `filters`
+
+```
+GET /api/resource/Sales Order?status=Draft&limit=10&offset=20&order_by=name asc
 ```
 
 ## Key Patterns
 
-1. Always check permissions with `frappe.has_permission()`
-2. Parse JSON strings with `frappe.parse_json()`
-3. Return proper HTTP status codes
-4. Validate input before processing
-5. Use `app.tenant_db` in microservices
-6. Log errors with `frappe.log_error()`
+1. Use `register_resource()` for standard CRUD (don't write manual endpoints)
+2. Use `@app.secure_route` for custom business logic endpoints
+3. Let `secure_route` handle auth, tenant, errors, and commits
+4. Use `app.tenant_db` for all data access
+5. Return dicts -- auto-serialized with proper type handling
+6. Standard Frappe: Use `@frappe.whitelist()` + permission checks
 
 ## Best Practices
 
-- Use `@frappe.whitelist()` decorator
-- Check permissions before operations
-- Validate all input
-- Use `frappe._()` for translatable messages
-- Consistent response format
-- Document with docstrings
+- Prefer `register_resource()` over manual CRUD endpoints
+- Use `@app.secure_route` for authenticated endpoints
+- Use `@app.route` only for public endpoints (health, webhooks)
+- Validate input before processing (`request.json`)
+- Use proper HTTP status codes (201 for create, 400 for bad input)
+- Log important operations via `app.logger`
 
 Remember: This skill is model-invoked. Claude will use it autonomously when detecting API development tasks.
