@@ -20,38 +20,38 @@ Check if code follows frappe-microservice-lib patterns and best practices.
 
 **1. Authentication**
 ```python
-# GOOD -- secure_route handles auth + tenant + user injection
+# ✅ Good
 @app.secure_route('/endpoint', methods=['GET'])
 def handler(user):
-    data = app.tenant_db.get_all('DocType')
-    return {"data": data}
+    pass
 
-# BAD -- no authentication
+# ❌ Bad - no authentication
 @app.route('/endpoint', methods=['GET'])
 def handler():
-    data = frappe.db.get_all('DocType')
-    return {"data": data}
+    pass
 ```
 
 **2. Tenant Isolation**
 ```python
-# GOOD -- tenant_db auto-filters by tenant_id
-data = app.tenant_db.get_all('DocType', filters={'status': 'Draft'})
+# ✅ Good
+tenant_id = get_current_tenant_id()
+app.set_tenant_id(tenant_id)
+data = app.tenant_db.get_all('DocType')
 
-# BAD -- no tenant isolation, returns ALL tenants' data
-data = frappe.db.get_all('DocType', filters={'status': 'Draft'})
+# ❌ Bad - no tenant isolation
+data = frappe.db.get_all('DocType')
 ```
 
 **3. SQL Injection Prevention**
 ```python
-# GOOD -- parameterized
+# ✅ Good - parameterized
 result = app.tenant_db.sql(
     "SELECT * FROM `tabDocType` WHERE tenant_id = %s AND status = %s",
     (tenant_id, 'Draft'),
     as_dict=True
 )
 
-# BAD -- string formatting
+# ❌ Bad - string formatting
 result = app.tenant_db.sql(
     f"SELECT * FROM `tabDocType` WHERE tenant_id = '{tenant_id}'"
 )
@@ -59,186 +59,229 @@ result = app.tenant_db.sql(
 
 ### Framework Pattern Checks
 
-**1. Tenant Resolution (Automatic)**
+**1. Tenant Resolution Function**
 ```python
-# GOOD -- secure_route handles tenant resolution automatically
-@app.secure_route('/endpoint', methods=['GET'])
-def handler(user):
-    # g.tenant_id is already set by secure_route
-    data = app.tenant_db.get_all('DocType')
-    return {"data": data}
+# ✅ Good - proper tenant resolution
+def get_current_tenant_id():
+    from flask import g
+    from frappe_microservice import get_user_tenant_id
+    
+    if hasattr(g, 'tenant_id') and g.tenant_id:
+        return g.tenant_id
+    
+    if hasattr(g, 'current_user') and g.current_user:
+        user_email = g.current_user
+        if user_email in ('Guest', 'Administrator'):
+            return None
+        tenant_id = get_user_tenant_id(user_email)
+        if tenant_id:
+            g.tenant_id = tenant_id
+            return tenant_id
+    return None
 
-# UNNECESSARY -- manual tenant resolution (secure_route does this)
-@app.secure_route('/endpoint', methods=['GET'])
-def handler(user):
-    tenant_id = get_current_tenant_id()
-    app.set_tenant_id(tenant_id)
-    data = app.tenant_db.get_all('DocType')
-    return {"data": data}
+# ❌ Bad - missing security checks
+def get_current_tenant_id():
+    return frappe.session.user
 ```
 
-**2. Transaction Management (Automatic)**
+**2. Database Access**
 ```python
-# GOOD -- middleware auto-commits after successful request
-@app.secure_route('/endpoint', methods=['POST'])
-def handler(user):
-    doc = app.tenant_db.insert_doc('DocType', request.json)
-    return {"name": doc.name}, 201
+# ✅ Good - uses tenant_db
+app.set_tenant_id(tenant_id)
+doc = app.tenant_db.get_doc('DocType', name)
 
-# UNNECESSARY -- manual commit (middleware handles this)
-@app.secure_route('/endpoint', methods=['POST'])
-def handler(user):
-    doc = app.tenant_db.insert_doc('DocType', request.json)
-    app.tenant_db.commit()  # Not needed
-    return {"name": doc.name}, 201
+# ❌ Bad - uses frappe.db directly
+doc = frappe.get_doc('DocType', name)
 ```
 
-**3. Error Handling (Automatic)**
+**3. Transaction Management**
 ```python
-# GOOD -- secure_route auto-handles Frappe exceptions
-@app.secure_route('/endpoint/<name>', methods=['GET'])
-def handler(user, name):
-    doc = app.tenant_db.get_doc('DocType', name)
-    return doc.as_dict()
-# DoesNotExistError → 404, PermissionError → 403 automatically
+# ✅ Good - proper transaction handling
+try:
+    frappe.db.begin()
+    doc1 = app.tenant_db.insert_doc('DocType1', data1)
+    doc2 = app.tenant_db.insert_doc('DocType2', data2)
+    app.tenant_db.commit()
+except Exception as e:
+    app.tenant_db.rollback()
+    raise
 
-# UNNECESSARY -- manual error handling for standard cases
-@app.secure_route('/endpoint/<name>', methods=['GET'])
-def handler(user, name):
-    try:
-        doc = app.tenant_db.get_doc('DocType', name)
-        return doc.as_dict()
-    except frappe.DoesNotExistError:
-        return {"error": "Not found"}, 404  # secure_route does this
+# ❌ Bad - no transaction management
+doc1 = app.tenant_db.insert_doc('DocType1', data1)
+doc2 = app.tenant_db.insert_doc('DocType2', data2)
 ```
 
-**4. Service Initialization**
+### Code Structure Checks
+
+**1. Service Initialization**
 ```python
-# GOOD -- proper initialization
+# ✅ Good - proper initialization
 app = create_microservice(
     "service-name",
-    load_framework_hooks=['frappe', 'erpnext'],
-    controllers_path="./controllers",
+    get_tenant_id_func=get_current_tenant_id,
+    load_framework_hooks=['frappe', 'erpnext']
 )
 
-# ACCEPTABLE -- create_microservice with defaults
-# (tenant resolution happens automatically via secure_route)
+# ❌ Bad - missing tenant function
 app = create_microservice("service-name")
 ```
 
-**5. Use register_resource for Standard CRUD**
+**2. Error Handling**
 ```python
-# GOOD -- auto-generates all CRUD endpoints
-app.register_resource("Sales Order")
+# ✅ Good - proper error responses
+try:
+    doc = app.tenant_db.get_doc('DocType', name)
+    return {"data": doc.as_dict()}
+except frappe.DoesNotExistError:
+    return {"error": "Document not found"}, 404
+except Exception as e:
+    return {"error": str(e)}, 500
 
-# UNNECESSARY -- manually writing CRUD that register_resource provides
-@app.secure_route('/api/resource/Sales Order', methods=['GET'])
-def list_orders(user):
-    return {"data": app.tenant_db.get_all('Sales Order')}
+# ❌ Bad - no error handling
+doc = app.tenant_db.get_doc('DocType', name)
+return {"data": doc.as_dict()}
+```
+
+**3. Input Validation**
+```python
+# ✅ Good - validates input
+data = request.json
+if not data:
+    return {"error": "No data provided"}, 400
+if not data.get('required_field'):
+    return {"error": "required_field is required"}, 400
+
+# ❌ Bad - no validation
+data = request.json
+doc = app.tenant_db.insert_doc('DocType', data)
 ```
 
 ### Controller Pattern Checks
 
 **1. Controller Structure**
 ```python
-# GOOD -- extends DocumentController
+# ✅ Good - proper controller
 from frappe_microservice.controller import DocumentController
 
 class SalesOrder(DocumentController):
     def validate(self):
         if not self.customer:
             self.throw("Customer is required")
+    
+    def before_insert(self):
+        if not self.status:
+            self.status = 'Draft'
 
-# BAD -- not using DocumentController
+# ❌ Bad - not using DocumentController
 class SalesOrder:
     def validate(self):
         pass
 ```
 
-**2. Controller Discovery**
+**2. Controller Registration**
 ```python
-# GOOD -- auto-discovered via controllers_path
-app = create_microservice("my-service", controllers_path="./controllers")
-
-# ALSO GOOD -- manual setup
+# ✅ Good - registers controllers
 from frappe_microservice.controller import setup_controllers
 setup_controllers(app, "./controllers")
 
-# BAD -- controllers defined but never registered
-# (they won't be called during lifecycle events)
+# ❌ Bad - controllers not registered
+# Controllers won't be called
 ```
 
 ### Hook Pattern Checks
 
 **1. Hook Registration**
 ```python
-# GOOD -- registered with tenant_db
+# ✅ Good - proper hook registration
 @app.tenant_db.on('Sales Order', 'before_insert')
 def set_defaults(doc):
     if not doc.status:
         doc.status = 'Draft'
 
-# GOOD -- convenience decorator
-@app.tenant_db.before_insert('Sales Order')
+# ❌ Bad - hook not registered with app
 def set_defaults(doc):
-    if not doc.status:
-        doc.status = 'Draft'
-
-# BAD -- hook defined but not registered
-def set_defaults(doc):
-    doc.status = 'Draft'
+    pass
 ```
 
 **2. Hook Error Handling**
 ```python
-# GOOD -- use frappe.throw for validation errors
+# ✅ Good - handles errors
 @app.tenant_db.on('Sales Order', 'validate')
 def validate_order(doc):
-    if not doc.customer:
-        frappe.throw("Customer is required")
+    try:
+        if not doc.customer:
+            frappe.throw("Customer is required")
+    except frappe.ValidationError:
+        raise
+    except Exception as e:
+        frappe.log_error(f"Error: {e}")
 
-# BAD -- bare Exception (not user-friendly)
+# ❌ Bad - no error handling
 @app.tenant_db.on('Sales Order', 'validate')
 def validate_order(doc):
     if not doc.customer:
         raise Exception("Customer is required")
 ```
 
-### Background Task Checks
+### Common Issues to Check
 
+**1. Missing tenant_id Setting**
 ```python
-# GOOD -- using enqueue_task with proper context
-app.enqueue_task(process_order, order_id, max_retries=3)
+# ❌ Bad - forgot to set tenant_id
+@app.secure_route('/endpoint', methods=['GET'])
+def handler(user):
+    data = app.tenant_db.get_all('DocType')  # Will fail!
 
-# GOOD -- run_background_task for thread-based execution
-app.run_background_task(sync_data, external_id)
+# ✅ Good
+@app.secure_route('/endpoint', methods=['GET'])
+def handler(user):
+    tenant_id = get_current_tenant_id()
+    app.set_tenant_id(tenant_id)
+    data = app.tenant_db.get_all('DocType')
+```
 
-# BAD -- raw threading without Frappe context
-import threading
-threading.Thread(target=process_order, args=(order_id,)).start()
+**2. Using frappe.session Directly**
+```python
+# ❌ Bad - direct session access
+user = frappe.session.user
+
+# ✅ Good - use injected user
+@app.secure_route('/endpoint', methods=['GET'])
+def handler(user):  # user is injected
+    pass
+```
+
+**3. Missing Commit**
+```python
+# ❌ Bad - no commit
+doc = app.tenant_db.insert_doc('DocType', data)
+return {"success": True}
+
+# ✅ Good - commits transaction
+doc = app.tenant_db.insert_doc('DocType', data)
+app.tenant_db.commit()
+return {"success": True}
 ```
 
 ## Validation Checklist
 
-- [ ] All data endpoints use `@app.secure_route` (not `@app.route`)
+- [ ] All endpoints use `@app.secure_route`
+- [ ] Tenant ID is set before database operations
 - [ ] All queries use `app.tenant_db` (not `frappe.db`)
-- [ ] SQL queries use `%s` parameterization (not f-strings)
-- [ ] Standard CRUD uses `register_resource()` instead of manual endpoints
+- [ ] SQL queries are parameterized
+- [ ] Transactions are properly managed (begin/commit/rollback)
+- [ ] Input validation is performed
+- [ ] Error handling returns proper HTTP status codes
 - [ ] Controllers extend `DocumentController`
-- [ ] Controllers are registered (auto-discovery or `setup_controllers`)
-- [ ] Hooks are registered via `@app.tenant_db.on()` or convenience decorators
-- [ ] No manual `app.set_tenant_id()` in `secure_route` handlers
-- [ ] No manual `app.tenant_db.commit()` in `secure_route` handlers
-- [ ] Background tasks use `enqueue_task` or `run_background_task`
-- [ ] Input validation on POST/PUT endpoints (check `request.json`)
-- [ ] Service-to-service calls use `X-Internal-Token` header
+- [ ] Hooks are registered with `@app.tenant_db.on()`
+- [ ] No direct `frappe.session` access in endpoints
 
 ## Key Rules
 
-1. **Always authenticate** -- Use `@app.secure_route`
-2. **Always isolate** -- Use `app.tenant_db`
-3. **Let middleware work** -- Don't manually commit, set tenant_id, or handle standard errors
-4. **Use register_resource** -- For standard CRUD operations
-5. **Parameterize SQL** -- Never use string formatting
-6. **Use DocumentController** -- For class-based lifecycle logic
-7. **Use enqueue_task** -- For background work (not raw threading)
+1. **Always authenticate** - Use `@app.secure_route`
+2. **Always isolate** - Use `app.tenant_db`
+3. **Always validate** - Check input and business rules
+4. **Always handle errors** - Return proper status codes
+5. **Always use transactions** - For multi-step operations
+6. **Never use frappe.db** - In microservices
+7. **Never use string formatting in SQL** - Always parameterize

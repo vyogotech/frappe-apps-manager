@@ -1,11 +1,11 @@
 ---
 name: frappe-compose-dev-generator
-description: Generate compose.yml for local containerized development using vyogo's sne images, following the projectnext compose.yml pattern.
+description: Generate compose.yml for local containerized development using vyogo's SNE (Single Node Environment) images. All-in-one containers with MariaDB, Redis, and Frappe/ERPNext bundled together.
 ---
 
 # Frappe Compose Dev Generator
 
-Generate `compose.yml` for local containerized development using vyogo's sne images.
+Generate `compose.yml` for local containerized development using vyogo's SNE images. These are all-in-one containers -- MariaDB, Redis, and Frappe/ERPNext are bundled inside, so no external database or cache services are needed.
 
 ## When to Use This Skill
 
@@ -16,50 +16,64 @@ Claude should invoke this skill when:
 - During app generation to include compose.yml
 - User wants to use vyogo's sne images for development
 
+## How SNE Images Work
+
+SNE images are self-contained. At startup, the container:
+1. Starts the built-in MariaDB and Redis
+2. Auto-discovers any app mounted under `/home/frappe/frappe-bench/apps/`
+3. Runs `pip install -e` for each discovered app and updates `sites/apps.txt`
+4. Runs `bench start` in the foreground
+
+No `bench get-app` or manual installation is needed -- just mount your app directory.
+
 ## Capabilities
 
-### 1. Basic Compose Template
+### 1. Basic Compose Template (Recommended)
 
-Generate `compose.yml` based on the projectnext pattern:
+Generate `compose.yml` for a single app:
 
 ```yaml
 services:
   frappe-sne:
-    image: docker.io/vyogo/erpnext:sne-version-15
+    image: docker.io/vyogo/erpnext:sne-version-16
     ports:
       - "8000:8000"
     volumes:
       - .:/home/frappe/frappe-bench/apps/<app-name>
-    # entrypoint: /usr/libexec/s2i/run
-    # environment:
-    #   MYSQL_ROOT_PASSWORD: securepassword
-    #   ENTRYPOINT: /usr/libexec/s2i/run
 ```
 
-### 2. App-Specific Customization
+Replace `<app-name>` with the actual app name (snake_case):
+- `projectnext` -> `/home/frappe/frappe-bench/apps/projectnext`
+- `my_custom_app` -> `/home/frappe/frappe-bench/apps/my_custom_app`
 
-Replace `<app-name>` with actual app name:
-- `projectnext` → `/home/frappe/frappe-bench/apps/projectnext`
-- `my_custom_app` → `/home/frappe/frappe-bench/apps/my_custom_app`
+### 2. Version Selection
 
-### 3. Version Variations
+**Version 16 (default for new projects):**
+```yaml
+image: docker.io/vyogo/erpnext:sne-version-16
+```
 
-**For Version 15:**
+**Version 15 (stable, most production deployments):**
 ```yaml
 image: docker.io/vyogo/erpnext:sne-version-15
 ```
 
-**For Version 14:**
+**Version 14:**
 ```yaml
 image: docker.io/vyogo/erpnext:sne-version-14
 ```
 
-**For Version 13:**
+**Version 13:**
 ```yaml
 image: docker.io/vyogo/erpnext:sne-version-13
 ```
 
-### 4. Port Configuration
+**Frappe only (no ERPNext):**
+```yaml
+image: docker.io/vyogo/frappe:s2i-version-16
+```
+
+### 3. Port Configuration
 
 **Default Port (8000):**
 ```yaml
@@ -67,169 +81,140 @@ ports:
   - "8000:8000"
 ```
 
-**Custom Port:**
+**Custom Host Port:**
 ```yaml
 ports:
   - "8080:8000"  # Host:Container
 ```
 
-**Multiple Ports:**
-```yaml
-ports:
-  - "8000:8000"   # Web
-  - "3306:3306"   # MySQL (if exposed)
-  - "6379:6379"   # Redis (if exposed)
-```
+### 4. Volume Mounts
 
-### 5. Volume Mounts
-
-**Development (Hot Reload):**
+**Development (single app, hot-reload):**
 ```yaml
 volumes:
   - .:/home/frappe/frappe-bench/apps/<app-name>
-  # Mount entire app directory for live changes
 ```
 
-**With Additional Volumes:**
+**Multiple apps:**
+```yaml
+volumes:
+  - ./app_one:/home/frappe/frappe-bench/apps/app_one
+  - ./app_two:/home/frappe/frappe-bench/apps/app_two
+```
+
+**Persisting site data across restarts:**
 ```yaml
 volumes:
   - .:/home/frappe/frappe-bench/apps/<app-name>
-  - ./sites:/home/frappe/frappe-bench/sites  # Persist sites
-  - ./logs:/home/frappe/frappe-bench/logs    # Persist logs
+  - ./sites:/home/frappe/frappe-bench/sites
+environment:
+  - ENABLE_ASSETS_CACHE=true
 ```
 
-### 6. Environment Variables
+When mounting `sites/` as a volume, set `ENABLE_ASSETS_CACHE=true` so built assets are restored from the image cache into the mounted volume.
 
-**Basic:**
+### 5. Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MYSQL_ROOT_PASSWORD` | `ChangeMe` | MariaDB root password (built-in) |
+| `ENABLE_ASSETS_CACHE` | `false` | Restore built assets when `sites/` is mounted as volume |
+
 ```yaml
 environment:
-  - FRAPPE_SITE=default
-  - BENCH_DEVELOPER=1
+  - MYSQL_ROOT_PASSWORD=ChangeMe
+  - ENABLE_ASSETS_CACHE=true
 ```
 
-**With Database:**
-```yaml
-environment:
-  - MYSQL_ROOT_PASSWORD=securepassword
-  - FRAPPE_SITE=default
-  - BENCH_DEVELOPER=1
-```
+### 6. Complete Example
 
-**Full Configuration:**
-```yaml
-environment:
-  - MYSQL_ROOT_PASSWORD=securepassword
-  - FRAPPE_SITE=default
-  - BENCH_DEVELOPER=1
-  - ENTRYPOINT=/usr/libexec/s2i/run
-  - PYTHONUNBUFFERED=1
-```
-
-### 7. Entrypoint Configuration
-
-**Using S2I Entrypoint:**
-```yaml
-entrypoint: /usr/libexec/s2i/run
-```
-
-**Custom Entrypoint:**
-```yaml
-entrypoint: ["/bin/bash", "-c"]
-command: ["bench start"]
-```
-
-### 8. Network Configuration
-
-**Default Network:**
-```yaml
-networks:
-  - default
-```
-
-**Custom Network:**
-```yaml
-networks:
-  frappe-network:
-    driver: bridge
-```
-
-### 9. Complete Example
-
-For app named `projectnext`:
+For app named `projectnext` on version 16:
 
 ```yaml
 services:
   frappe-sne:
-    image: docker.io/vyogo/erpnext:sne-version-15
+    image: docker.io/vyogo/erpnext:sne-version-16
     ports:
       - "8000:8000"
     volumes:
       - .:/home/frappe/frappe-bench/apps/projectnext
     environment:
-      - FRAPPE_SITE=default
-      - BENCH_DEVELOPER=1
-      - PYTHONUNBUFFERED=1
-    # Optional: Uncomment for S2I entrypoint
-    # entrypoint: /usr/libexec/s2i/run
-    # Optional: Database configuration
-    # environment:
-    #   MYSQL_ROOT_PASSWORD: securepassword
-    #   ENTRYPOINT: /usr/libexec/s2i/run
+      - MYSQL_ROOT_PASSWORD=ChangeMe
 ```
 
-### 10. Multi-Service Setup
+### 7. Multi-App Development
 
-If you need database and Redis:
+When developing multiple apps together:
 
 ```yaml
 services:
   frappe-sne:
-    image: docker.io/vyogo/erpnext:sne-version-15
+    image: docker.io/vyogo/erpnext:sne-version-16
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../app_one:/home/frappe/frappe-bench/apps/app_one
+      - ../app_two:/home/frappe/frappe-bench/apps/app_two
+    environment:
+      - MYSQL_ROOT_PASSWORD=ChangeMe
+```
+
+All mounted apps are auto-discovered and installed at startup.
+
+### 8. Multi-Container Setup (SNE + Microservices)
+
+When running an SNE container alongside microservices, use a shared network. Do NOT add separate MariaDB/Redis containers -- they are built into the SNE image.
+
+```yaml
+services:
+  frappe-sne:
+    image: docker.io/vyogo/erpnext:sne-version-16
     ports:
       - "8000:8000"
     volumes:
       - .:/home/frappe/frappe-bench/apps/<app-name>
-      - ./sites:/home/frappe/frappe-bench/sites
     environment:
-      - FRAPPE_SITE=default
-      - BENCH_DEVELOPER=1
-    depends_on:
-      - mariadb
-      - redis
-  
-  mariadb:
-    image: mariadb:10.6
-    environment:
-      - MYSQL_ROOT_PASSWORD=securepassword
-    volumes:
-      - mariadb_data:/var/lib/mysql
-  
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
+      - MYSQL_ROOT_PASSWORD=ChangeMe
+    networks:
+      - frappe-network
 
-volumes:
-  mariadb_data:
-  redis_data:
+  my-microservice:
+    image: my-microservice:latest
+    ports:
+      - "8002:8000"
+    environment:
+      - CENTRAL_SITE_URL=http://frappe-sne:8000
+      - DB_HOST=frappe-sne
+      - DB_PORT=3306
+      - REDIS_HOST=frappe-sne
+      - REDIS_PORT=6379
+    depends_on:
+      - frappe-sne
+    networks:
+      - frappe-network
+
+networks:
+  frappe-network:
+    driver: bridge
 ```
 
 ## Key Patterns
 
-1. **Image**: Use `docker.io/vyogo/erpnext:sne-version-15` for vyogo's sne images
-2. **Volume Mount**: Mount app directory for hot-reload development
-3. **Port Mapping**: Map container port 8000 to host
-4. **Environment**: Set `BENCH_DEVELOPER=1` for development mode
-5. **Entrypoint**: Optional S2I entrypoint for production-like behavior
+1. **Image**: Use `docker.io/vyogo/erpnext:sne-version-16` (or version-15 for stable)
+2. **All-in-one**: SNE containers include MariaDB and Redis -- do NOT add them separately
+3. **Auto-registration**: Mounted apps are auto-discovered -- no `bench get-app` needed
+4. **Volume mount**: Mount app directory for hot-reload development
+5. **Port mapping**: Map container port 8000 to host
+6. **Default credentials**: Site `dev.localhost`, login `Administrator` / `admin`
 
 ## Best Practices
 
-- **Hot Reload**: Use volume mounts for live code changes
-- **Port Management**: Use standard port 8000 or document custom ports
-- **Environment Variables**: Set appropriate development flags
-- **Comments**: Include commented options for easy configuration
-- **Version Pinning**: Pin specific image versions, not `latest`
-- **Security**: Don't commit passwords in compose.yml (use .env file)
+- Use `sne-version-16` for new projects, `sne-version-15` for stable/production-like dev
+- Mount only your app directories -- let the container manage its own MariaDB/Redis
+- Do NOT add separate `mariadb` or `redis` services when using SNE images
+- Use `ENABLE_ASSETS_CACHE=true` when mounting `sites/` as a volume
+- Pin specific image versions (e.g., `sne-version-16`), never use `sne-latest` in CI
+- Use `.env` files for passwords instead of hardcoding in compose.yml
 
 ## Integration with frappe-new-app
 
@@ -238,54 +223,30 @@ When generating a new app, automatically include compose.yml:
 1. After app creation, generate compose.yml
 2. Use app name from app creation
 3. Place compose.yml in app root directory
-4. Inform user about containerized development setup
+4. Default to `sne-version-16` unless user specifies a version
 
 ## Usage Instructions
 
 **Start Development:**
 ```bash
-# Using Docker Compose
-docker-compose up -d
-
-# Using Podman Compose
-podman-compose up -d
+docker compose up
+# or
+podman-compose up
 ```
 
 **View Logs:**
 ```bash
-docker-compose logs -f frappe-sne
-# or
-podman-compose logs -f frappe-sne
+docker compose logs -f frappe-sne
 ```
 
 **Stop Services:**
 ```bash
-docker-compose down
-# or
-podman-compose down
+docker compose down
 ```
 
-**Rebuild:**
+**Shell into Container:**
 ```bash
-docker-compose up -d --build
-# or
-podman-compose up -d --build
-```
-
-## Example Output
-
-For app named `projectnext`:
-
-```yaml
-services:
-  frappe-sne:
-    image: docker.io/vyogo/erpnext:sne-version-15
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/home/frappe/frappe-bench/apps/projectnext
-    # entrypoint: /usr/libexec/s2i/run
-    # environment:
-    #   MYSQL_ROOT_PASSWORD: securepassword
-    #   ENTRYPOINT: /usr/libexec/s2i/run
+docker compose exec frappe-sne bash
+# Then use bench commands:
+bench --site dev.localhost console
 ```
