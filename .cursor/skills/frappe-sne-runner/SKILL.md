@@ -1,72 +1,101 @@
 ---
 name: frappe-sne-runner
-description: Run ERPNext/Frappe SNE (Single Node Environment) images for local development. All-in-one containers with MariaDB, Redis, and Frappe/ERPNext bundled together.
+description: Set up local Frappe/ERPNext development using vyogo SNE (Single Node Environment) images. Replaces the traditional multi-container setup (MariaDB, Redis, workers, scheduler) with a single all-in-one container.
 ---
 
-# Frappe SNE Runner
+# Frappe SNE Runner -- Local Development Setup
 
-Run ERPNext and Frappe applications locally using vyogo's **Single Node Environment (SNE)** images. These all-in-one containers bundle MariaDB, Redis, Python, Node.js, Nginx, and Frappe/ERPNext into a single container -- no external database or cache services needed.
+Set up local Frappe/ERPNext development using vyogo's **SNE (Single Node Environment)** images. One container replaces the entire traditional Frappe stack.
 
 ## When to Use This Skill
 
 Claude should invoke this skill when:
-- User wants to run ERPNext or Frappe locally in a container
-- User asks about SNE images or single-node development
-- User wants to develop a Frappe app with hot-reload in a container
-- User mentions `vyogo/erpnext`, `vyogo/frappe`, or `sne` images
-- User wants to package a custom app into a standalone image using S2I
-- User needs to set up a quick ERPNext demo or dev environment
+- User wants to set up Frappe or ERPNext locally
+- User wants to run a Frappe app in a container for development
+- User asks about local dev environment for Frappe
+- User mentions `vyogo/erpnext`, `vyogo/frappe`, or SNE images
+- User wants to replace a multi-container Frappe setup with something simpler
+- User needs a quick ERPNext demo environment
 
-## Available Images
+## Why SNE: Before vs After
 
-| Image | Description | Versions |
-|-------|-------------|----------|
-| `docker.io/vyogo/frappe:s2i-version-{VER}` | Base S2I builder (Frappe only, no ERPNext) | 15, 16 |
-| `docker.io/vyogo/erpnext:sne-version-{VER}` | ERPNext SNE (Frappe + ERPNext) | 13, 14, 15, 16 |
-| `docker.io/vyogo/crm:sne-version-{VER}` | Frappe CRM SNE | 15, 16 |
-| `docker.io/vyogo/central-site:sne-version-{VER}` | Central site for microservice architecture | 15, 16 |
+### Traditional Setup (10+ containers)
 
-Multi-arch support: all images are available for both `linux/amd64` and `linux/arm64` (Apple Silicon).
+A traditional containerized Frappe dev environment requires separate services for database, cache, workers, scheduler, websocket, and frontend:
 
-## What's Inside an SNE Image
+```yaml
+services:
+  backend:
+    image: frappe/erpnext:v15
+  db:
+    image: mariadb:10.6
+  int-redis-cache:
+    image: redis:6.2-alpine
+  int-redis-queue:
+    image: redis:6.2-alpine
+  int-redis-socketio:
+    image: redis:6.2-alpine
+  frontend:
+    image: frappe/erpnext:v15
+    command: nginx-entrypoint.sh
+  queue-default:
+    image: frappe/erpnext:v15
+    command: bench worker --queue default
+  queue-long:
+    image: frappe/erpnext:v15
+    command: bench worker --queue long
+  queue-short:
+    image: frappe/erpnext:v15
+    command: bench worker --queue short
+  scheduler:
+    image: frappe/erpnext:v15
+    command: bench schedule
+  websocket:
+    image: frappe/erpnext:v15
+    command: node socketio.js
+  configurator:
+    # configures db_host, redis_cache, etc.
+  create-site:
+    # creates site, installs apps
+```
 
-Each SNE image is self-contained:
-- **MariaDB 10.11** -- starts automatically, root password: `ChangeMe` (configurable)
-- **Redis 7** -- starts automatically, ephemeral mode (no persistence)
-- **Python 3.14** with Frappe bench installed
-- **Node.js 24** with Yarn
-- **Nginx 1.22**
-- **Pre-created site**: `dev.localhost` with admin password `admin`
-- **S2I scripts** for building and running apps
+Plus separate named volumes for db-data, redis-data, sites, and logs.
+
+### SNE Setup (1 container)
+
+```yaml
+services:
+  frappe-sne:
+    image: docker.io/vyogo/erpnext:sne-version-16
+    ports:
+      - "8000:8000"
+```
+
+That's it. MariaDB, Redis, workers, scheduler, websocket -- all run inside the single container. Site is pre-created. Apps are auto-discovered.
 
 ## Quick Start
 
-### 1. Run ERPNext (No Custom App)
+### Run ERPNext Locally
 
 ```bash
-# Using Docker
-docker run -p 8000:8000 docker.io/vyogo/erpnext:sne-version-16
-
-# Using Podman
 podman run -p 8000:8000 docker.io/vyogo/erpnext:sne-version-16
 ```
 
-Access ERPNext at `http://localhost:8000` (login: `Administrator` / `admin`).
+Access at `http://localhost:8000` -- login: `Administrator` / `admin`.
 
-### 2. Run with a Custom App (Hot-Reload Development)
+### Develop a Custom App
 
-Mount your app directory into the container. The SNE image **auto-discovers** any app under `/home/frappe/frappe-bench/apps/` at startup, runs `pip install -e`, and registers it in `apps.txt`.
+Mount your app directory. The container auto-discovers it, runs `pip install -e`, and registers it:
 
 ```bash
-# Mount your app for live development
 podman run -p 8000:8000 \
   -v ./my_custom_app:/home/frappe/frappe-bench/apps/my_custom_app \
   docker.io/vyogo/erpnext:sne-version-16
 ```
 
-No `bench get-app` needed -- the run script handles installation automatically.
+No `bench get-app` needed.
 
-### 3. Run with Multiple Custom Apps
+### Develop Multiple Apps
 
 ```bash
 podman run -p 8000:8000 \
@@ -75,9 +104,7 @@ podman run -p 8000:8000 \
   docker.io/vyogo/erpnext:sne-version-16
 ```
 
-### 4. Run Frappe Only (No ERPNext)
-
-Use the base S2I builder image to run Frappe without ERPNext:
+### Run Frappe Only (No ERPNext)
 
 ```bash
 podman run -p 8000:8000 \
@@ -87,6 +114,8 @@ podman run -p 8000:8000 \
 
 ## Compose File for Development
 
+### Single App
+
 ```yaml
 services:
   frappe-sne:
@@ -94,27 +123,112 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./my_custom_app:/home/frappe/frappe-bench/apps/my_custom_app
-    environment:
-      - MYSQL_ROOT_PASSWORD=ChangeMe
+      - .:/home/frappe/frappe-bench/apps/<app-name>
 ```
 
-Start with `docker compose up` or `podman-compose up`.
+### With Site Persistence
+
+```yaml
+services:
+  frappe-sne:
+    image: docker.io/vyogo/erpnext:sne-version-16
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/home/frappe/frappe-bench/apps/<app-name>
+      - site_data:/home/frappe/frappe-bench/sites
+    environment:
+      - ENABLE_ASSETS_CACHE=true
+
+volumes:
+  site_data:
+```
+
+### With Microservices
+
+When pairing an SNE container with microservices, the SNE container acts as the central site. Microservices connect to its built-in MariaDB and Redis over a shared network:
+
+```yaml
+name: my-project-dev
+services:
+  central-site:
+    image: docker.io/vyogo/erpnext:sne-version-16
+    ports:
+      - "8080:8000"
+    networks:
+      - dev-network
+
+  my-service:
+    image: my-microservice:latest
+    ports:
+      - "8002:8000"
+    environment:
+      - CENTRAL_SITE_URL=http://central-site:8000
+      - DB_HOST=central-site
+      - DB_PORT=3306
+      - REDIS_HOST=central-site
+      - REDIS_PORT=6379
+    depends_on:
+      central-site:
+        condition: service_started
+    networks:
+      - dev-network
+
+networks:
+  dev-network:
+    driver: bridge
+```
+
+## Available Images
+
+| Image | Description | Versions |
+|-------|-------------|----------|
+| `docker.io/vyogo/erpnext:sne-version-{VER}` | ERPNext + Frappe (most common) | 13, 14, 15, 16 |
+| `docker.io/vyogo/frappe:s2i-version-{VER}` | Frappe only (no ERPNext) | 15, 16 |
+| `docker.io/vyogo/crm:sne-version-{VER}` | Frappe CRM | 15, 16 |
+| `docker.io/vyogo/central-site:sne-version-{VER}` | Central site for microservices | 15, 16 |
+
+All images support both `linux/amd64` and `linux/arm64` (Apple Silicon).
+
+## What's Inside
+
+Each SNE container runs:
+- **MariaDB 10.11** -- auto-starts, root password `ChangeMe` (configurable via `MYSQL_ROOT_PASSWORD`)
+- **Redis 7** -- auto-starts, ephemeral (no persistence)
+- **Python 3.14** with bench, Gunicorn, workers, scheduler
+- **Node.js 24** with Yarn, socketio
+- **Nginx 1.22**
+- **Pre-created site**: `dev.localhost`, admin password `admin`
+
+## Version Guide
+
+| Version | Use Case |
+|---------|----------|
+| `sne-version-16` | Latest features, new projects (default) |
+| `sne-version-15` | Stable, production-like development |
+| `sne-version-14` | Legacy apps |
+| `sne-version-13` | Legacy apps |
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MYSQL_ROOT_PASSWORD` | `ChangeMe` | MariaDB root password |
-| `ENABLE_ASSETS_CACHE` | `false` | Set to `true` to cache built assets and restore them when `sites/` is mounted as a volume |
+| `ENABLE_ASSETS_CACHE` | `false` | Restore cached assets when `sites/` is a mounted volume |
 
-## Packaging Custom Apps with S2I
+## How Startup Works
 
-S2I (Source-to-Image) lets you build a standalone image containing your app without writing a Dockerfile.
+1. MariaDB starts
+2. Redis starts (ephemeral, stale cache cleared)
+3. App auto-discovery: scans `apps/` directory, runs `pip install -e` for each, updates `apps.txt`
+4. Asset restore if `ENABLE_ASSETS_CACHE=true`
+5. `bench start` runs in foreground (web server + workers + scheduler)
 
-### Method 1: Using `apps.json`
+## Packaging Apps with S2I
 
-Create an `apps.json` in your project root:
+Build a standalone image containing your app using S2I (Source-to-Image):
+
+### Using apps.json
 
 ```json
 [
@@ -124,177 +238,56 @@ Create an `apps.json` in your project root:
         "name": "erpnext"
     },
     {
-        "url": "https://github.com/your-org/your-app.git",
-        "branch": "main",
-        "name": "your_app"
-    }
-]
-```
-
-For local source directories (no git fetch), use the `source` field instead of `url`:
-
-```json
-[
-    {
-        "name": "erpnext",
-        "source": "erpnext"
-    },
-    {
         "name": "my_app",
         "source": "my_app"
     }
 ]
 ```
 
-Build with S2I:
+Build:
 
 ```bash
 s2i build . docker.io/vyogo/frappe:s2i-version-16 my-app-image
 ```
 
-### Method 2: Using a Containerfile
+### Using a Containerfile
 
 ```dockerfile
 FROM docker.io/vyogo/frappe:s2i-version-16
-
 ENV FRAPPE_SITE_NAME=dev.localhost
-
 COPY apps.json /tmp/apps.json
-COPY my_custom_app /upload/src/my_custom_app
+COPY my_app /upload/src/my_app
 ```
-
-Build:
-
-```bash
-podman build -t my-app-image .
-```
-
-### Method 3: Using the Makefile (Frappista Repo)
-
-From the frappista repo, use `s2i-podman.sh` to build layered images:
-
-```bash
-# Build ERPNext SNE for current arch
-make erpnext
-
-# Build for specific architecture
-make erpnext-amd64
-make erpnext-arm64
-
-# Push multi-arch manifest
-make erpnext-manifest
-```
-
-Override the Frappe version:
-
-```bash
-make erpnext FRAPPE_VERSION=version-15
-```
-
-## Configuration Files
-
-### apps.json
-
-Defines which apps to install during S2I build. Supports two modes:
-
-- **Git mode**: `url` + `branch` -- fetches from git during build
-- **Local mode**: `source` -- copies from a local directory in the build context
-
-### site-config.json
-
-Defines the site to create during build:
-
-```json
-{
-    "site_name": "dev.localhost",
-    "admin_password": "admin"
-}
-```
-
-If omitted, defaults to site `dev.localhost` with password `admin`.
-
-### bench-config.json
-
-Defines bench initialization parameters:
-
-```json
-{
-    "branch": "version-16",
-    "bench_name": "frappe-bench"
-}
-```
-
-## How SNE Startup Works
-
-1. **MariaDB starts** with PID file at `/tmp/pids/mysqld.pid`
-2. **Redis starts** in ephemeral mode (no persistence, stale cache cleared)
-3. **App auto-discovery**: scans `/home/frappe/frappe-bench/apps/` for mounted apps, runs `pip install -e` for each, updates `sites/apps.txt`
-4. **Asset restore** (if `ENABLE_ASSETS_CACHE=true`): restores pre-built assets from image cache
-5. **MariaDB remote access** enabled for root user
-6. **Cache cleared**: `bench --site all clear-cache`
-7. **`bench start`** runs in foreground (Gunicorn web server + workers)
-
-## Version Selection Guide
-
-| Version | Frappe | Python | Node.js | Use Case |
-|---------|--------|--------|---------|----------|
-| `sne-version-16` | v16 | 3.14 | 24 | Latest features, new projects |
-| `sne-version-15` | v15 | 3.11+ | 18+ | Stable, most production deployments |
-| `sne-version-14` | v14 | 3.10+ | 16+ | Legacy support |
-| `sne-version-13` | v13 | 3.8+ | 14+ | Legacy support |
 
 ## Troubleshooting
 
-### Redis Segfault (QEMU Emulation)
+### Redis Segfault on Apple Silicon
 
-If running an `amd64` image on an Apple Silicon (ARM) Mac, Redis may segfault under QEMU emulation. Use the `arm64` image instead:
+Use the ARM image:
 
 ```bash
 podman run --platform linux/arm64 -p 8000:8000 \
   docker.io/vyogo/erpnext:sne-version-16
 ```
 
-Or build the ARM image locally:
+### App Not Detected
+
+Ensure the mounted directory:
+- Is directly under `/home/frappe/frappe-bench/apps/`
+- Contains a valid `hooks.py` or `pyproject.toml`
+- Uses snake_case naming matching the app module
+
+### Port Conflict
 
 ```bash
-make erpnext-arm64
-```
-
-### App Not Detected at Startup
-
-The auto-discovery looks for directories directly under `/home/frappe/frappe-bench/apps/`. Ensure:
-- The volume mount target is a directory (not a file)
-- The app directory contains a valid `hooks.py` or `pyproject.toml`
-- The directory name matches the app's module name (snake_case)
-
-### Port Already in Use
-
-```bash
-# Check what's using port 8000
-lsof -i :8000
-
-# Use a different host port
 podman run -p 8080:8000 docker.io/vyogo/erpnext:sne-version-16
 ```
 
-### Persisting Site Data Across Restarts
-
-Mount the `sites` directory to preserve database and site config:
-
-```bash
-podman run -p 8000:8000 \
-  -v ./sites:/home/frappe/frappe-bench/sites \
-  -e ENABLE_ASSETS_CACHE=true \
-  docker.io/vyogo/erpnext:sne-version-16
-```
-
-Use `ENABLE_ASSETS_CACHE=true` so built assets are restored into the mounted volume.
-
 ## Best Practices
 
-- Use `sne-version-16` for new projects (latest Frappe features)
-- Mount only app directories for development; let the container manage MariaDB/Redis
-- Do NOT run a separate MariaDB or Redis alongside an SNE container -- they are built in
-- Use `apps.json` with `source` fields for packaging apps with local source code
-- Pin image versions (e.g., `sne-version-16`), never use `sne-latest` in CI
-- For production, build a standalone image using S2I rather than mounting volumes
+- Use `sne-version-16` for new projects
+- Do NOT add separate MariaDB or Redis containers -- they are built in
+- Mount only your app directories; let the container manage its own services
+- Use `ENABLE_ASSETS_CACHE=true` when persisting `sites/` as a volume
+- Pin image versions, never use `latest` in CI/CD
+- For production, package your app using S2I rather than volume mounts
