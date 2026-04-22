@@ -21,11 +21,33 @@ This is the **exact** folder structure that `bench new-app ` produces. Any Frapp
 
 You only need to create **DocTypes (JSON + Python controller + JS form script)** and **hooks.py**. The rest is handled by Frappe automatically. Do NOT create custom page renderers, view templates, or UI generators unless the user explicitly asks for a web portal or public website.
 
+## ⚠️ CRITICAL: Three-Level Nesting Rule
+
+Frappe apps have THREE levels of same-name folders. This is NOT a typo:
+
+```
+leave_tracker/                          ← Level 1: App root
+└── leave_tracker/                      ← Level 2: Inner Python package
+    └── leave_tracker/                  ← Level 3: Module folder (from modules.txt)
+        └── doctype/                    ← doctype/ is INSIDE the module folder
+            └── leave_request/
+                ├── leave_request.json
+                └── leave_request.py
+```
+
+**The `doctype/` folder NEVER goes directly under the inner package (Level 2).**
+It ALWAYS goes inside a module folder (Level 3).
+
+WRONG: `leave_tracker/leave_tracker/doctype/` — missing the module folder!
+RIGHT: `leave_tracker/leave_tracker/leave_tracker/doctype/`
+
+The Python import path reflects this: `leave_tracker.leave_tracker.doctype.leave_request.leave_request`
+
 ## REQUIRED Files (minimum viable Frappe app)
 
 ```
-invoicing/                         # App root (this is what bench new-app creates)
-├── invoicing/                     # Inner package (same name as app)
+invoicing/                         # Level 1: App root (bench new-app creates this)
+├── invoicing/                     # Level 2: Inner package (same name as app)
 │   ├── __init__.py
 │   ├── hooks.py                   # App hooks (scheduler, doc_events, fixtures, etc.)
 │   ├── modules.txt                # One module name per line
@@ -33,8 +55,8 @@ invoicing/                         # App root (this is what bench new-app create
 │   ├── config/
 │   │   ├── __init__.py
 │   │   └── desktop.py             # Module icon for desk sidebar
-│   ├── <module_name>/             # One folder per module (from modules.txt)
-│   │   ├── __init__.py
+│   ├── <module_name>/             # Level 3: Module folder (one per modules.txt entry)
+│   │   ├── __init__.py            # ← doctype/ goes INSIDE here, NOT at Level 2
 │   │   └── doctype/
 │   │       ├── __init__.py
 │   │       └── <doctype_name>/    # One folder per DocType
@@ -76,6 +98,7 @@ These are scaffolded by `bench new-app` but are EMPTY and should NOT be populate
 7. **patches.txt**: Data migration scripts listed as dotted paths (e.g., `invoicing.patches.v1_0.fix_tax_rates`).
 8. **UI is automatic**: Frappe Desk renders forms, lists, and reports from DocType JSON. Do NOT write custom HTML/Jinja templates for standard CRUD operations.
 9. **`import os` and `import json` are normal**: These are standard Python imports used in Frappe apps. They are NOT dangerous.
+10. **Three-level nesting is mandatory**: `app/app/module/doctype/` — never put `doctype/` directly under the inner package. See the "Three-Level Nesting Rule" section above.
 
 ## Example: Invoicing App with Two DocTypes
 
