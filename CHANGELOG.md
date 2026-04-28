@@ -5,6 +5,25 @@ All notable changes to the Frappe Apps Manager plugin will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-04-28
+
+### Added
+
+**Skills (5 new, 1 updated):**
+- `frappe-architect` (Updated) - Added a structured design decision tree (Reuse, Extend, Virtualize, Custom) and UX/Analytics guidelines for new apps.
+- `frappe-virtual-doctype` - Implement external API integrations without data duplication using `is_virtual: 1`.
+- `frappe-workspace-builder` - Generate Workspace 2.0 layouts with headers, shortcuts, cards, and quick lists.
+- `frappe-dashboard-builder` - Configure analytical Dashboards, Number Cards, and Charts with strict filter validation.
+- `frappe-report-builder` - Build Query and Script Reports with standard file structures and Python/JS logic.
+- `frappe-print-format-builder` - Design professional PDF/HTML layouts using Jinja2 and Bootstrap.
+
+### Changed
+
+- Updated architectural principles to enforce real-time data virtualization over fragile synchronization patterns.
+- Standardized all UI skills to use the latest version 14+ / version 16 file path patterns (`[app]/[module]/[doctype]/[name]/[name].json`).
+
+---
+
 ## [2.0.0] - 2025-12-15
 
 ### Added
