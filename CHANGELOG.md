@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-**Skills (1 new):**
+**Skills (2 new):**
 - `frappe-test-planner` - Generate structured QA deliverables: Test Plans, Manual Test Cases, Regression Suites, and Bug Reports. Includes Figma validation checklists for UI parity.
+- `frappe-app-installation-validator` - DevOps-focused skill for validating app installability and migrations using SNE images in CI/CD pipelines.
 
 ### Changed
 
 - **Strategic QA**: Elevated `frappe-tester` agent to a "Senior QA Automation Engineer" role, incorporating the Testing Pyramid, Page Object Model (POM), and Strategic E2E principles.
+- **App Installation Guard**: Updated `frappe-devops` agent to orchestrate SNE-based installation validation.
 - **Iron Law of TDD**: Updated `frappe-tdd-tests` to enforce a strict Red-Green-Refactor cycle ("No production code without a failing test first").
 - **POM & Visual Parity**: Enhanced `frappe-ui-testing` (Cypress) with Page Object Model patterns and Figma design-to-implementation validation guidelines.
 - **Test Data Builder**: Updated `frappe-integration-test-generator` with the "Object Mother" pattern for consistent test data and distributed health check patterns.

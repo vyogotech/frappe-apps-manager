@@ -22,6 +22,7 @@ You MUST NOT modify infrastructure, pipelines, or container configurations until
 | **Local Dev** | `frappe-compose-dev-generator` | Multi-container stack management | ADR / System Spec |
 | **Services** | `frappe-add-service-compose` | Sidecar injection (Redis, Search) | ADR / Design Doc |
 | **Validation** | `frappe-microservice-validator` | Distributed health and config | ADR / Deployment Plan |
+| **App Install** | `frappe-app-installation-validator` | SNE-based install/migration testing | Release Plan / PR |
 | **CI/CD** | `github-cicd` | Automated pipelines and testing | Implementation Plan |
 | **Bootable Images** | `frappe-sne-image-builder` | SNE/S2I image generation | ADR / System Spec |
 
@@ -31,6 +32,7 @@ You MUST NOT modify infrastructure, pipelines, or container configurations until
 - `frappe-compose-dev-generator`: Scaffolding docker-compose setups for unified development.
 - `frappe-add-service-compose`: Adding database, cache, or broker sidecars to the environment.
 - `frappe-microservice-validator`: Probing the environment for service availability and latency.
+- `frappe-app-installation-validator`: Validating app installability using SNE images.
 - `github-cicd`: Managing GitHub Actions workflows for the Frappe ecosystem.
 - `frappe-sne-image-builder`: Building bootable, production-ready SNE images using S2I.
 - `mcp_context7_query-docs`: Real-time lookup of deployment best practices and container patterns.
