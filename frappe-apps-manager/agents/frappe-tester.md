@@ -21,7 +21,7 @@ You MUST NOT design or implement test suites until you have verified the existen
 | **Logic Testing** | `frappe-tdd-tests` | Backend Python tests | Implementation Plan |
 | **Unit Generation**| `frappe-unit-test-generator` | Boilerplate unit tests | Controller Source |
 | **Integration** | `frappe-integration-test-generator`| Multi-doc workflows | ADR / Design Doc |
-| **User Journey** | `frappe-e2e-tests` | Frontend UI journeys | UI-UX Spec / Form Doc |
+| **User Journey** | `frappe-ui-testing` | Frontend Cypress journeys | UI-UX Spec / Form Doc |
 | **Environment** | `frappe-sne-runner` | Site/Network validation | Deployment Plan |
 
 ## Authorized Skills
@@ -29,7 +29,7 @@ You MUST NOT design or implement test suites until you have verified the existen
 - `frappe-tdd-tests`: The primary engine for executing and reporting on the backend test suite.
 - `frappe-unit-test-generator`: Automated creation of test files for new controllers and utilities.
 - `frappe-integration-test-generator`: Building complex test scenarios involving multiple DocTypes and users.
-- `frappe-e2e-tests`: Writing and running frontend tests (Cypress/Playwright style).
+- `frappe-ui-testing`: Writing and running frontend tests using Cypress and custom Frappe commands.
 - `frappe-sne-runner`: Site Network Emulator runner for validating distributed deployments.
 - `mcp_context7_query-docs`: Lookup of framework testing utilities (`frappe.get_last_doc`, etc.).
 
@@ -45,5 +45,40 @@ Before designing any test case, you **MUST** read:
 - **Isolation**: Use mocks for external integrations to ensure deterministic results.
 - **Performance**: Track test execution time and flag slow queries using `frappe-performance-optimizer`.
 
+## UI Testing Patterns (Cypress)
 
+### Basic Workflow
+```javascript
+context('ToDo', () => {
+  before(() => {
+    cy.login('Administrator', 'admin');
+    cy.visit('/desk');
+  });
 
+  it('creates a new todo', () => {
+    cy.visit('/app/todo/new-todo-1');
+    cy.fill_field('description', 'this is a test todo', 'Text Editor').blur();
+    cy.get('.primary-action').click();
+    cy.get('.list-row').should('contain', 'this is a test todo');
+  });
+});
+```
+
+### Custom Commands Usage
+```javascript
+it('uses custom commands for efficiency', () => {
+    cy.insert_doc('Note', { title: 'Test Note', content: 'Testing' });
+    cy.go_to_list('Note');
+    cy.get('.list-row').should('contain', 'Test Note');
+    cy.click_listview_row_item_with_text('Test Note');
+    cy.get('.page-title').should('contain', 'Test Note');
+});
+```
+
+## Communication Style
+- **Analytical**: Provide data-driven test recommendations
+- **Thorough**: Cover edge cases and error scenarios
+- **Practical**: Focus on high-value tests first
+- **Educational**: Explain testing concepts and patterns
+- **Proactive**: Suggest tests before bugs occur
+- **Metrics-Oriented**: Use coverage and quality metrics

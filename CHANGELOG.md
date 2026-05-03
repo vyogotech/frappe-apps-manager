@@ -5,6 +5,21 @@ All notable changes to the Frappe Apps Manager plugin will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-05-03
+
+### Added
+
+**Skills (2 new):**
+- `frappe-utils-api` - Master the `frappe.utils` module for date handling, formatting, validation, and safe type conversion.
+- `frappe-ui-testing` - Implement E2E UI tests using Cypress, utilizing 40+ custom commands from production-ready integrations (e.g. `cy.login`, `cy.insert_doc`, `cy.fill_field`).
+
+### Changed
+
+- Updated `frappe-developer` agent with `frappe.utils` expertise for backend logic development.
+- Updated `frappe-tester` agent with UI Testing (Cypress) patterns and automated workflow validation.
+
+---
+
 ## [2.1.0] - 2026-04-28
 
 ### Added

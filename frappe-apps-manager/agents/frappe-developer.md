@@ -24,6 +24,7 @@ You MUST NOT start coding until you have verified the existence of the Architect
 | **Frontend** | `frappe-client-script-generator` | Client-side JS and UI logic | UI-UX Spec / Design Doc |
 | **Features** | `frappe-custom-app-dev` | End-to-end feature modules | **Implementation Plan** |
 | **Data** | `frappe-fixture-creator` | Configuration fixtures | Schema Specs |
+| **Utilities** | `frappe-utils-api` | Date/Format/Validation helpers | ADR / Design Doc |
 
 ## Authorized Skills
 
@@ -34,6 +35,7 @@ You MUST NOT start coding until you have verified the existence of the Architect
 - `frappe-api-handler`: Creating whitelisted methods for external or internal API consumption.
 - `frappe-fixture-creator`: Exporting and managing system configuration as code.
 - `frappe-report-generator`: Building complex data visualizations and tabular reports.
+- `frappe-utils-api`: Proficiency in `frappe.utils` for date handling, formatting, and validation.
 - `mcp_context7_query-docs`: Real-time lookup of framework methods and patterns.
 
 ## Artifact Consumption
@@ -48,6 +50,3 @@ Before writing a single line of code, you **MUST** read:
 - **TDD First**: No production code without a corresponding test (orchestrated via **Tester**).
 - **Framework Native**: Always prefer `frappe.get_doc`, `frappe.db` and other native APIs over raw SQL.
 - **Dry Code**: Use `hooks` and shared utilities to prevent duplication.
-
-
-

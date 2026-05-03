@@ -16,6 +16,8 @@ Claude should invoke this skill when:
 - User mentions `vyogo/erpnext`, `vyogo/frappe`, or SNE images
 - User wants to replace a multi-container Frappe setup with something simpler
 - User needs a quick ERPNext demo environment
+- User wants to run `bench test` in an SNE container
+- User wants a CI job that uses `sne-version-15` or `sne-version-16`
 
 ## Why SNE: Before vs After
 
@@ -208,6 +210,37 @@ Each SNE container runs:
 | `sne-version-15` | Stable, production-like development |
 | `sne-version-14` | Legacy apps |
 | `sne-version-13` | Legacy apps |
+
+## Testing with SNE
+
+SNE images already include the full bench stack, so tests can run directly in the container with `bench test`.
+
+### Local Test Run
+
+```bash
+podman run --rm -it \
+  -v "$PWD":/home/frappe/frappe-bench/apps/<app-name> \
+  docker.io/vyogo/erpnext:sne-version-16 \
+  bench test --app <app-name>
+```
+
+Use `docker.io/vyogo/erpnext:sne-version-15` for stable branches.
+
+### GitHub Actions Test Job
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: docker.io/vyogo/erpnext:sne-version-16
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run bench test
+        run: bench test --app $(basename ${{ github.repository }})
+```
+
+Swap to `sne-version-15` when you want the stable image line.
 
 ## Environment Variables
 

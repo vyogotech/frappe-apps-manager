@@ -46,4 +46,3 @@ Before provisioning any resource, you **MUST** consult:
 - **Bootability**: Ensure all custom apps are packaged as S2I bootable SNE images.
 - **Reproducibility**: Ensure dev, staging, and prod environments are consistent.
 - **Observability**: Implement clear logging and performance metrics across the stack.
-
