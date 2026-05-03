@@ -5,18 +5,23 @@ All notable changes to the Frappe Apps Manager plugin will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.2.0] - 2026-05-03
+## [2.2.1] - 2026-05-03
 
 ### Added
 
-**Skills (2 new):**
-- `frappe-utils-api` - Master the `frappe.utils` module for date handling, formatting, validation, and safe type conversion.
-- `frappe-ui-testing` - Implement E2E UI tests using Cypress, utilizing 40+ custom commands from production-ready integrations (e.g. `cy.login`, `cy.insert_doc`, `cy.fill_field`).
+**Skills (1 new):**
+- `frappe-test-planner` - Generate structured QA deliverables: Test Plans, Manual Test Cases, Regression Suites, and Bug Reports. Includes Figma validation checklists for UI parity.
 
 ### Changed
 
-- Updated `frappe-developer` agent with `frappe.utils` expertise for backend logic development.
-- Updated `frappe-tester` agent with UI Testing (Cypress) patterns and automated workflow validation.
+- **Strategic QA**: Elevated `frappe-tester` agent to a "Senior QA Automation Engineer" role, incorporating the Testing Pyramid, Page Object Model (POM), and Strategic E2E principles.
+- **Iron Law of TDD**: Updated `frappe-tdd-tests` to enforce a strict Red-Green-Refactor cycle ("No production code without a failing test first").
+- **POM & Visual Parity**: Enhanced `frappe-ui-testing` (Cypress) with Page Object Model patterns and Figma design-to-implementation validation guidelines.
+- **Test Data Builder**: Updated `frappe-integration-test-generator` with the "Object Mother" pattern for consistent test data and distributed health check patterns.
+
+---
+
+## [2.2.0] - 2026-05-03
 
 ---
 

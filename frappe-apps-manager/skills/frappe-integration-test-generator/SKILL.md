@@ -1,107 +1,68 @@
 ---
 name: frappe-integration-test-generator
-description: Generate integration tests for multi-DocType workflows in Frappe. Use when testing end-to-end workflows, state transitions, or complex business processes.
+description: Generate integration tests for multi-DocType workflows and distributed services in Frappe.
 ---
 
 # Frappe Integration Test Generator
 
-Generate comprehensive integration tests for multi-DocType workflows and end-to-end business processes in Frappe.
+Build robust integration tests that validate the interaction between multiple DocTypes, Background Jobs, and external Microservices.
 
-## When to Use This Skill
+## Test Data Builder Pattern
 
-Claude should invoke this skill when:
-- User wants to test complete workflows
-- User needs end-to-end scenario testing
-- User mentions integration tests or workflow testing
-- User wants to test multi-DocType interactions
-- User needs to verify business process integrity
+Avoid messy `setUp` methods by using dedicated builder functions or the "Object Mother" pattern to create consistent test data.
 
-## Capabilities
-
-### 1. Workflow Integration Test
-
-**Complete Sales Workflow Test:**
 ```python
-from frappe.tests.utils import FrappeTestCase
-import frappe
+class TestDataBuilder:
+    @staticmethod
+    def create_customer(name="_Test Customer"):
+        if not frappe.db.exists("Customer", name):
+            return frappe.get_doc({
+                "doctype": "Customer",
+                "customer_name": name,
+                "customer_group": "All Customer Groups",
+                "territory": "All Territories"
+            }).insert(ignore_permissions=True)
+        return frappe.get_doc("Customer", name)
 
-class TestSalesWorkflow(FrappeTestCase):
-    def test_complete_sales_cycle(self):
-        """Test end-to-end sales process"""
-        # 1. Create Customer
-        customer = self._create_test_customer()
-
-        # 2. Create Sales Order
-        so = self._create_sales_order(customer.name)
-        so.submit()
-
-        # 3. Create Sales Invoice from SO
-        si = self._make_sales_invoice_from_order(so.name)
-        si.insert()
-        si.submit()
-
-        # 4. Create Payment Entry
-        pe = self._create_payment_entry(si)
-        pe.insert()
-        pe.submit()
-
-        # Verify workflow completed
-        si.reload()
-        self.assertEqual(si.status, 'Paid')
-        self.assertEqual(si.outstanding_amount, 0)
-
-    def _create_test_customer(self):
-        return frappe.get_doc({
-            'doctype': 'Customer',
-            'customer_name': '_Test Customer',
-            'customer_group': 'Commercial'
-        }).insert()
-
-    def _create_sales_order(self, customer):
-        return frappe.get_doc({
-            'doctype': 'Sales Order',
-            'customer': customer,
-            'delivery_date': frappe.utils.add_days(frappe.utils.today(), 7),
-            'items': [{
-                'item_code': '_Test Item',
-                'qty': 10,
-                'rate': 100
-            }]
-        })
+    @staticmethod
+    def create_item(item_code="_Test Item"):
+        # ... logic to create item with default warehouse ...
 ```
 
-### 2. State Transition Test
+## Distributed Service & Health Checks
 
-**Test Document States:**
+When testing integrations with external services (e.g., a Go-based Cloud Agent), verify the "Distributed Health" of the system.
+
 ```python
-class TestInvoiceStates(FrappeTestCase):
-    def test_invoice_state_transitions(self):
-        """Test all possible state transitions"""
-        si = self._get_test_invoice()
+class TestMicroserviceIntegration(FrappeTestCase):
+    def test_service_health(self):
+        """Verify the external service is reachable before running tests"""
+        from frappe.utils.commands import run_command
+        # Example: check if a sidecar service is responsive
+        response = frappe.make_get_request("http://cloud-agent:8080/health")
+        self.assertEqual(response.get("status"), "UP")
 
-        # Draft state
-        si.insert()
-        self.assertEqual(si.docstatus, 0)
-        self.assertEqual(si.status, 'Draft')
-
-        # Submit transition
-        si.submit()
-        self.assertEqual(si.docstatus, 1)
-        self.assertEqual(si.status, 'Submitted')
-
-        # Cannot edit submitted
-        si.customer = 'Different Customer'
-        with self.assertRaises(frappe.ValidationError):
-            si.save()
-
-        # Cancel transition
-        si.cancel()
-        self.assertEqual(si.docstatus, 2)
-        self.assertEqual(si.status, 'Cancelled')
+    def test_distributed_transaction(self):
+        """Test if a DocType change propagates to the external service"""
+        doc = frappe.get_doc({"doctype": "K8s Cluster", "cluster_name": "Test"}).insert()
+        # Wait for background job or async event
+        frappe.db.commit() 
+        # Verify side-effect in external system
+        self.assertTrue(self._check_external_state("Test"))
 ```
 
-## References
+## Workflow State Validation
 
-**Integration Test Examples:**
-- Sales Invoice Tests: https://github.com/frappe/erpnext/blob/develop/erpnext/accounts/doctype/sales_invoice/test_sales_invoice.py
-- Stock Entry Tests: https://github.com/frappe/erpnext/blob/develop/erpnext/stock/doctype/stock_entry/test_stock_entry.py
+Ensure state transitions are atomic and consistent across the testing pyramid.
+
+| Step | Action | Expected State |
+|---|---|---|
+| 1 | Create Draft | `docstatus == 0` |
+| 2 | Trigger Workflow | `status == "Pending Approval"` |
+| 3 | Submit | `docstatus == 1` and Linked Docs Created |
+
+## Best Practices
+
+- **Idempotency**: Tests should be runnable multiple times on the same site without conflict (use `frappe.db.rollback()` or unique naming).
+- **Background Jobs**: Use `frappe.enqueue` with `now=frappe.flags.in_test` to test async logic synchronously.
+- **Sidecar Validation**: If your app depends on Redis or Socket.io, include a "Sanity Test" in your suite.
