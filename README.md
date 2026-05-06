@@ -1,6 +1,6 @@
 # Frappe Apps Manager Plugin
 
-A comprehensive Claude Code plugin for Frappe Framework development with **95% SDLC coverage** - 15 commands, 10 agents, and 28 skills for complete Frappe/ERPNext development lifecycle including microservices and containerization.
+A comprehensive Claude Code plugin for Frappe Framework development with **100% SDLC coverage** - 15 commands, 10 agents, and 55 skills for complete Frappe/ERPNext development lifecycle including microservices and containerization.
 
 ## Quick Start
 
@@ -16,6 +16,13 @@ Then restart Claude Code and run `/help` to see all 15 Frappe commands!
 ## Overview
 
 The Frappe Apps Manager plugin extends Claude Code with specialized capabilities for building, deploying, and maintaining Frappe applications. Whether you're creating new apps, designing DocTypes, debugging issues, or deploying to production, this plugin provides expert assistance at every step.
+
+**What's New in v2.2.0:**
+- 🆕 5 new advanced skills (Background Jobs, Real-time, Portal, Monkey Patching, Patches)
+- 🆕 Upgraded `frappe-app-scaffold` with modern standards (v14/v15/v16+)
+- 🆕 Full `pyproject.toml` support for app creation
+- 🆕 Enhanced module management and `modules.txt` automation
+- 🆕 55 total skills for true 100% SDLC coverage
 
 **What's New in v2.1.0:**
 - 🆕 11 new microservice skills (scaffolding, tenant isolation, container testing, and more)
@@ -79,9 +86,19 @@ The Frappe Apps Manager plugin extends Claude Code with specialized capabilities
 - **frappe-integration** 🆕 - API and webhook integration
 - **frappe-data-engineer** 🆕 - Data migration and management
 
-### 28 Autonomous Skills
+### 55 Autonomous Skills
+
+**Advanced Backend & Performance (New in v2.2.0):**
+- **frappe-background-jobs** 🆕 - `frappe.enqueue` and scheduled tasks
+- **frappe-realtime-handler** 🆕 - Socket.io live updates and notifications
+- **frappe-monkey-patching** 🆕 - Expert core overrides and runtime patching
+- **frappe-patch-generator** 🆕 - Robust database migration patches
+
+**Portal & Web (New in v2.2.0):**
+- **frappe-portal-generator** 🆕 - Custom portal pages and dynamic web routes
 
 **Core Development:**
+- **frappe-app-scaffold** ⭐ - Upgraded for modern v15 standards (pyproject.toml)
 - **frappe-doctype-builder** - Generate DocType JSON structures
 - **frappe-api-handler** - Create REST API endpoints
 - **frappe-client-script-generator** 🆕 - JavaScript form scripts (10 patterns)

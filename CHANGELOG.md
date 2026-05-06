@@ -23,7 +23,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.2.0] - 2026-05-03
+## [2.2.0] - 2026-05-06
+
+### Added
+
+**Skills (5 new, 1 updated):**
+- `frappe-background-jobs` 🆕 - Expert patterns for `frappe.enqueue`, scheduled tasks, and long-running background processes.
+- `frappe-realtime-handler` 🆕 - Implementation of Socket.io for real-time notifications, live updates, and bidirectional communication.
+- `frappe-portal-generator` 🆕 - Advanced portal development patterns, including custom web routes, dynamic Jinja templates, and SEO optimization.
+- `frappe-monkey-patching` 🆕 - Expert-level core overrides using `override_doctype_class`, `override_whitelisted_methods`, and runtime function patching.
+- `frappe-patch-generator` 🆕 - Robust database migration patches for data transformations and schema evolution during `bench migrate`.
+- `frappe-app-scaffold` (Updated) ⭐ - Complete overhaul for modern Frappe standards (v14/v15/v16+). Added full `pyproject.toml` support and automated `modules.txt` management.
+
+### Changed
+
+- **SDLC Coverage**: Increased from 95% to **100% coverage** with the addition of advanced backend, portal, and expert-level framework customization skills.
+- **Modern Standards**: Transitioned the primary app scaffolding logic from `setup.py` to `pyproject.toml` to align with the latest Frappe Framework recommendations.
+- **Module Management**: Standardized module naming conventions and automated `modules.txt` updates for all new app and feature generation.
 
 ---
 
