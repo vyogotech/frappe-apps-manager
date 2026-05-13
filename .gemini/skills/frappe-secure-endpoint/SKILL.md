@@ -109,3 +109,68 @@ def delete_handler(user, name):
 - Use transactions for multi-step operations
 
 Remember: This skill is model-invoked. Claude will use it autonomously when detecting secure endpoint development needs.
+
+## Decision Tree & Reference
+
+*Condensed from `frappe-core-permissions` (Frappe_Claude_Skill_Package): Frappe-native access control aligns with secure, user-facing endpoints.*
+
+### Permission decision tree
+
+```
+Need access control?
+├── Who can CRUD/submit/etc. on DocType? → Role Permissions on DocType
+├── Which concrete records visible? → User Permissions (record-level filters on Link targets)
+├── Which fields readable/editable? → Perm Levels (permlevel ≥ 1; grant 0 before higher levels)
+├── Field values masked [v16+]? → Field mask + grant `mask` on role rows
+├── Custom deny-only logic? → has_permission hook
+├── Narrow list/query results before return? → permission_query_conditions hook
+└── One-off sharing? → frappe.share helpers
+
+Checking in Python?
+├── Decide allow/deny → frappe.has_permission(...) or doc.has_permission(ptype)
+├── Enforce abort → frappe.has_permission(..., throw=True) or doc.check_permission(ptype)
+├── System/batch bypass → ignore_permissions (comments required)
+└── User-facing listings → frappe.get_list (NOT get_all)
+```
+
+### Quick reference tables
+
+**Layers**
+
+| Layer | Purpose |
+|-------|---------|
+| Role permissions | Capability per DocType/action |
+| User permissions | Allowed Link values per user |
+| Perm levels | Hide/split sensitive fields |
+| Hooks | Extend/deny programmatically |
+| Data masking | Obfuscate sensitive fields |
+
+**permission_query_conditions vs get_list**
+
+| API | Applies user perms | Applies query hook |
+|-----|--------------------|---------------------|
+| `frappe.get_list()` | Yes | Yes |
+| `frappe.get_all()` | No | No |
+
+Typical **`ptype`** checks include `read`, `write`, `create`, `delete`, `submit`, `cancel`, `amend`; **`select`** exists for Link access (v14+).
+
+### ALWAYS / NEVER (permissions)
+
+| ALWAYS | NEVER |
+|--------|--------|
+| Prefer **`frappe.has_permission(doctype, ptype, ...)`** for authorization — not raw role string checks alone. | Return **`True` from `has_permission` hooks** to “grant”; use **`None`** to defer to core rules. |
+| Use **`frappe.get_list`** for responses shown to authenticated users unless you deliberately bypass hooks. | Return user-controlled SQL fragments **without escaping** (`frappe.db.escape` for hook WHERE parts). |
+| Return **`False`/`None`** appropriately from **`has_permission`**; document **`ignore_permissions`**. | Raise **`frappe.throw` inside permission hooks** when denying — return **`False`** instead. |
+| Grant **`permlevel 0`** before granting higher permlevels. For hooks that build WHERE: prefix **`tab{Doctype}`** columns safely. | Assume **data masking** protects **raw SQL** or Query Reports — mask manually where needed **[v16+]** |
+
+### Hook anti-pattern cheat sheet
+
+| Avoid | Prefer |
+|-------|--------|
+| `if "Role" in frappe.get_roles():` alone for gates | `frappe.has_permission(doctype, permtype)` |
+| `frappe.get_all()` for filtered user data | `frappe.get_list()` |
+| Concatenating unescaped `%`/`f-string` values into hook SQL snippets | `'owner = ' + frappe.db.escape(user)` |
+
+### Precedence snapshot
+
+Administrator → Role permissions → User permissions → `has_permission` denials → Sharing/`if_owner` refinements — plan checks so cumulative rules stay predictable.

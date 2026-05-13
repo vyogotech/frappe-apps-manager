@@ -548,3 +548,97 @@ Always include:
 - **field_name**: Handle field changes
 - **child_table_field**: Handle child table field changes
 - **items_add/remove**: Handle row additions/removals
+
+## Decision Tree & Reference
+
+Source skill: **`frappe-syntax-clientscripts`** (Frappe Claude Skill Package workspace). Summarizes event timing, API cheatsheet, handler choice, and hard rules—supplements the ERPNext-pattern examples above, does not replace them.
+
+### Quick Reference (syntax cheatsheet)
+
+| Action | Code |
+|--------|------|
+| Set value | `frm.set_value('field', value)` or `frm.set_value({ ... })` |
+| Get value | `frm.doc.fieldname` |
+| Hide field | `frm.toggle_display('field', false)` |
+| Mandatory | `frm.toggle_reqd('field', true)` |
+| Read-only | `frm.toggle_enable('field', false)` |
+| DF property | `frm.set_df_property('field', 'options', [...])` |
+| Filter Link | `frm.set_query('field', () => ({ filters: {} }))` |
+| Server | `frappe.call({ method, args })` |
+| Doc method | `frm.call('method_name', { args })` |
+| Block save | `frappe.throw(__('...'))` in `validate` |
+| Child row | `frm.add_child('table', { ... }); frm.refresh_field('table')` |
+| Alert | `frappe.show_alert({ message: __('...'), indicator: 'green' })` |
+
+### Event execution order (condensed)
+
+- **Load**: `setup` → `onload` → `refresh` → `onload_post_render`
+- **Save**: `validate` → `before_save` → *[server]* → `after_save` → `refresh`
+- **Submit**: `validate` → `before_submit` → *[server]* → `on_submit` → `refresh`
+- **Cancel**: `before_cancel` → *[server]* → `after_cancel` → `refresh`
+- **Reload / frm.refresh**: `before_load` → `onload` → `refresh` → `onload_post_render`
+
+### Form event reference table
+
+| Event | When | Params | Typical use |
+|-------|------|--------|--------------|
+| `setup` | Once per form instance | `(frm)` | `set_query`, one-time config |
+| `onload` | Loaded, before render | `(frm)` | Defaults, preprocessing |
+| `refresh` | After load/reload/save | `(frm)` | Buttons, visibility |
+| `onload_post_render` | DOM ready | `(frm)` | DOM-dependent work |
+| `validate` | Before save/submit | `(frm)` | Block with `frappe.throw()` |
+| `before_save` | After validate | `(frm)` | Last-minute values |
+| `after_save` | After save | `(frm)` | Follow-up UI/notifications |
+| `before_submit` | Before submit | `(frm)` | Pre-submit checks |
+| `on_submit` | After submit | `(frm)` | Post-submit actions |
+| `before_cancel` / `after_cancel` | Around cancel | `(frm)` | Cancel hooks |
+| `before_workflow_action` / `after_workflow_action` | Workflow | `(frm)` | Workflow hooks |
+| `timeline_refresh` | Timeline rendered | `(frm)` | Timeline customization |
+
+**Field change handlers:** use exact `fieldname` as event key—they run on UI change, `frm.set_value()`, and child `frappe.model.set_value()`; they do **not** run after raw `frm.doc.field = …` assignments.
+
+**Child DocType handlers:** register on the **child** DocType (`frappe.ui.form.on('Sales Order Item', { … })`). Grid lifecycle: `{table}_add`, `{table}_remove`, `{table}_move`, `{table}_before_remove` (v14+).
+
+### setup vs refresh
+
+| Aspect | `setup` | `refresh` |
+|--------|---------|-----------|
+| Frequency | Once | Every load/reload/save |
+| Use for | `set_query`, formatters | Buttons, dynamic UI |
+
+### Event decision tree (syntax)
+
+```
+What do you need?
+├── One-time setup (queries, formatters)?
+│   └── ALWAYS use setup — once per form instance
+├── Show/hide, buttons, refresh UI each load?
+│   └── ALWAYS use refresh
+├── Validate before save?
+│   └── ALWAYS use validate — frappe.throw() to block
+├── Change values immediately before save?
+│   └── Use before_save
+├── After persisted save?
+│   └── Use after_save
+├── React to field change?
+│   └── Use fieldname handler
+├── Workflow transition?
+│   └── before_workflow_action / after_workflow_action
+└── After full DOM render?
+    └── onload_post_render — NEVER manipulate fields via bare jQuery
+```
+
+### ALWAYS / NEVER (syntax-critical)
+
+1. ALWAYS call `frm.refresh_field('table')` after child table mutations (`add_child`, `clear_table`, bulk row edits) so the grid stays in sync.
+2. NEVER assign `frm.doc.field = value` on the parent form—use `frm.set_value()` so triggers, dirty state, and UI update run.
+3. ALWAYS wrap user-facing strings in `__()`.
+4. ALWAYS define `set_query` in `setup`, not `refresh` (callbacks still read fresh `frm.doc`).
+5. NEVER use `async: false` on `frappe.call` (locks the UI).
+6. ALWAYS guard custom action buttons (`frm.is_new()`, `docstatus`, business fields).
+7. NEVER drive field visibility or enablement by raw jQuery—use `frm.toggle_display`, `frm.toggle_enable`, `frm.set_df_property`.
+8. NEVER keep form state in global variables—stash on `frm` (e.g. `frm._cache_key`).
+9. ALWAYS check `r.message` before using `frappe.call` results unless you rely on upstream guarantees.
+10. In `validate`, ALWAYS block saves with `frappe.throw()`; with async/server checks use `async validate` + `await`—NEVER rely on callbacks that finish after validate returns.
+
+**Async validation:** NEVER fire an un-awaited `frappe.call` inside `validate`—saving continues before your callback resolves; use `async/await` instead.

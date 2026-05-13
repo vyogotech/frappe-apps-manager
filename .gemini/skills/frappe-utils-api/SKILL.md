@@ -129,3 +129,52 @@ frappe.confirm(_("Are you sure you want to proceed?"),
 - [Frappe Python API](https://docs.frappe.io/framework/user/en/api)
 
 Remember: This skill is model-invoked. Claude will use it autonomously when writing Frappe backend logic.
+
+## Decision Tree & Reference
+
+*Condensed from `frappe-core-utils` (Frappe_Claude_Skill_Package).*
+
+### “Which frappe.utils helper?” decision tree
+
+```
+Date/time → now_datetime / nowdate (or helpers like today()); parse via getdate / get_datetime; shift with add_days, add_months, add_to_date; compare length with date_diff, time helpers; UX strings via format_date, format_datetime, pretty_date; calendars via get_first_day, get_last_day, quarter helpers.
+
+Numbers → flt/cint/cstr/sbool; bank rounding via rounded; divide via safe_div (v15+); currency via fmt_money / money_in_words.
+
+Strings/HTML → strip_html, escape_html, is_html; lists via comma_and / comma_or; optional mask_string [v16+].
+
+Validation → validate_email_address, validate_url(+schemes), validate_phone_number, validate_json_string (+ IBAN/name helpers on newer builds).
+
+Paths/files → get_files_path({public/private}), get_site_path segments, bench path helpers, file sizing utilities.
+
+Imports → `from frappe.utils import ...` inside controllers/whitelist; Server Scripts expose `frappe.utils.*` WITHOUT import lines.
+```
+
+### Python quick-reference (supplements examples above)
+
+| Need | Typical API |
+|------|--------------|
+| “Now” respecting site TZ | `now_datetime()`, `nowdate()`/`today()` (prefer over raw `datetime.now()` / `date.today()`) |
+| Duration math | `add_to_date`, `date_diff`, `month_diff`, `time_diff_in_seconds`, `duration_to_seconds` [v15+] |
+| Serialization | `parse_json` / `safe_json_loads` where provided; **`frappe.as_json`** vs ad-hoc `json.dumps` for responses |
+| Hash / dedupe | `generate_hash`, `unique` |
+
+### Client (Desk) snippets
+
+Same spirit on JS: **`frappe.utils.escape_html`, `parse_json`, `comma_and`, `unique`, `debounce`/`throttle`, `scroll_to`** for UI-heavy code paths.
+
+### NEVER (stdlib shortcuts) ↔ ALWAYS (`frappe.utils`)
+
+| NEVER | ALWAYS | Why |
+|-------|---------|-----|
+| `datetime.now()`/`date.today()` for business timestamps | Site-aware helpers (`now_datetime`, `nowdate`, …) | Honor configured timezone semantics |
+| `float()`/`int()` on DocField payloads | `flt`, `cint`, `cstr`, `sbool` | **`None`/blank safe** conversions |
+| `round()` for ERP math | `rounded` (+ precision args) | Consistent banker-style rounding expectations |
+| `val1 / val2` blindly | **`safe_div(a, b)`** after v15 | Avoid `ZeroDivisionError` in KPI math |
+| `json.loads`/`dumps` for framework boundaries | **`parse_json` / `frappe.as_json`** | Handles empty inputs + consistent payloads |
+| String money formatting ignores currency | **`fmt_money` + ISO currency** | Locale/currency correctness |
+| `os.path.join` into tenant paths | **`get_site_path` / `get_files_path`** | **Multi-site path safety** |
+| Regex stripping HTML | **`strip_html`** | Handles malformed markup better |
+| Bare `strftime` ignoring user prefs | **`format_date`/`format_datetime`** | Respects system/user formatting |
+
+Server Scripts: **`frappe.utils.nowdate()`** style — **imports of `frappe.utils` modules are unavailable** inside the sandbox.

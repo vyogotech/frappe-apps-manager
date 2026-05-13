@@ -97,3 +97,51 @@ def bulk_update_items(updates):
 **Performance Examples:**
 - Stock Ledger: https://github.com/frappe/erpnext/blob/develop/erpnext/stock/stock_ledger.py
 - Get Item Details: https://github.com/frappe/erpnext/blob/develop/erpnext/stock/get_item_details.py
+
+## Decision Tree & Reference
+
+*Condensed from `frappe-ops-performance` (Frappe_Claude_Skill_Package).*
+
+### Stack rule
+
+Tune **MariaDB**, **Redis**, **Gunicorn**, and **RQ** together — optimizing only one layer often shifts bottlenecks elsewhere.
+
+### Performance decision tree
+
+```
+What is slow?
+|
++-- Page loads slow? → Check Gunicorn saturation, MariaDB slow log, Redis memory/eviction; consider CDN for static assets
++-- Background jobs delayed? → bench doctor / pending jobs; scale RQ workers; find long-running jobs blocking queues
++-- DB queries slow? → Slow query log + EXPLAIN; indexes on hot filters; prefer get_cached_value over get_value for repeat reads
++-- OOM / high memory? → Fewer Gunicorn workers; Redis maxmemory; right-size innodb_buffer_pool_size; check custom leaks
++-- High CPU? → cProfile; N+1 patterns; heavy scheduled/custom jobs
+```
+
+### Quick reference
+
+| Topic | Notes |
+|--------|------|
+| Health | `bench doctor`; jobs: `bench --site SITE show-pending-jobs`; clear: `bench --site SITE clear-cache` / `clear-website-cache`; stuck: `bench purge-jobs` |
+| Gunicorn workers | `workers ≈ (2 × CPU_CORES) + 1`; plan ~150–300MB RAM **per worker**; never exceed RAM (swap destroys latency) |
+| Redis (Frappe) | Three roles: cache (~13000), queue (~11000), socketio (~12000); set **maxmemory** on cache + **allkeys-lru** |
+| InnoDB | **innodb_buffer_pool_size** dominates; ~50–70% RAM on DB-only host (lower if shared); **utf8mb4** for Frappe |
+| CDN | `cdn_url` in `site_config.json` prefixes `/assets/` |
+
+### Common symptoms → fixes
+
+| Symptom | Likely cause | Direction |
+|---------|----------------|-----------|
+| Slow pages, high DB time | Missing indexes, N+1 | Indexes; batch queries; caching |
+| Queue backlog | Too few workers / slow jobs | More workers; shorter jobs |
+| OOM | Too many workers / unbounded Redis | Reduce workers; **maxmemory** |
+| Timeouts under load | Low Gunicorn timeout / saturation | Tune `--timeout`, workers |
+
+### ALWAYS / NEVER (ops & app reads)
+
+| ALWAYS | NEVER |
+|--------|--------|
+| Set Redis **maxmemory** on cache (with eviction policy). | Run Redis cache without memory cap → OOM risk. |
+| Size Gunicorn workers to **fit RAM** with DB + Redis + OS headroom. | Add workers beyond physical RAM → swapping. |
+| Use **`frappe.db.get_cached_value`** (or Redis cache patterns) for hot repeated reads vs raw `get_value` every time. | Assume one layer tuning fixes everything without checking the others. |
+| Prefer **utf8mb4** / **utf8mb4_unicode_ci** for MariaDB serving Frappe. | Rely on default query cache on modern MariaDB — disable where appropriate (`query_cache_type = 0`). |

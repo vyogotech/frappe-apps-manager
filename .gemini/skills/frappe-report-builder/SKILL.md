@@ -85,3 +85,38 @@ frappe.query_reports["My Script Report"] = {
 - **Performance**: Use `frappe.db.get_all` or `frappe.qb` (Query Builder) for efficient data retrieval.
 - **Labels**: Always wrap labels in `_()` or `__()` for translation support.
 - **Visibility**: Add your report to a **Workspace** sidebar or shortcut for easy access.
+
+## Decision Tree & Reference
+
+_Source: consolidated from `frappe-syntax-reports` and `frappe-impl-reports` (Frappe Claude Skill Package). Focus: Report Builder (UI) vs coded reports._
+
+### Choosing Report Builder vs Query vs Script
+
+```
+Need a report?
+├─ Simple list/group of ONE DocType, no custom code → Report Builder
+├─ Direct SQL only, no Python → Query Report
+├─ Complex logic, charts, summary cards, formatters → Script Report
+│   └─ Very large dataset / timeout risk → Prepared Report
+└─ Workspace KPIs → Number Card or Dashboard Chart (separate DocTypes)
+```
+
+### Report Builder (UI) — quick reference
+
+| Aspect | Report Builder | Query / Script Report |
+|--------|----------------|------------------------|
+| Code | None | SQL and/or Python + JS |
+| Best for | Ad-hoc tabular views, filters, sort, **Group By** (Count / Sum / Avg) on one DocType | Joins, custom SQL, Python aggregation, charts, `report_summary`, custom formatters |
+| Typical access | Users who can open the DocType / module | Often stricter (e.g. System Manager / Dev Mode for standard Script Reports) |
+| Deployment | Saved in DB; can export standard report JSON to app | Standard reports live under `report/<name>/` in the app |
+
+### UI Report Builder–specific tips
+
+- Use **Report Builder** when the answer is “show me these fields from this DocType with filters and maybe a group total” — stay in the UI; do not add an app report unless you need version control or sharing as product defaults.
+- **Group By** in the UI supports aggregates (e.g. Count, Sum, Avg) on a single DocType; multi-DocType logic or custom chart datasets still require a **Script** (or **Query**) report.
+- **Query Report** is SQL-centric and uses the legacy `"Label:Fieldtype/Options:Width"` column format in `SELECT` aliases, not the dict column list from Script Reports.
+- **Script Report** is where you implement `execute()`, optional `chart`, `report_summary`, `prepared_report` in JS, and client `formatter` functions — none of that is available inside pure Report Builder configuration.
+
+### Prepared reports (when the UI report is not enough)
+
+If users outgrow Report Builder (timeouts, huge row counts), move to a Script (or Query) report and enable **Prepared Report** so generation runs in the background and results are cached for refresh on demand.

@@ -246,3 +246,80 @@ apps/<app>/<module>/report/<report_name>/
 - **Performance**: Index, cache, limit
 
 Remember: This skill is model-invoked. Claude will use it autonomously when detecting report development tasks.
+
+## Decision Tree & Reference
+
+_Source: consolidated from `frappe-syntax-reports` and `frappe-impl-reports` (Frappe Claude Skill Package)._
+
+### Which report type?
+
+```
+Need a report?
+├─ Simple list / group by on one DocType → Report Builder (UI-only; Group By: Count/Sum/Avg)
+├─ Direct SQL, no Python logic → Query Report (legacy column aliases in SQL)
+├─ Complex logic, charts, summaries, trees → Script Report (standard: .py + .js; needs Developer Mode)
+└─ Quick Python without deploying an app → Script Report — Custom (Python in Report UI; System Manager)
+```
+
+Additional signals (Desk / product):
+
+```
+End user builds their own report? → Report Builder
+Realtime KPI tile on workspace? → Number Card or Dashboard Chart (not a report substitute)
+Huge dataset (>~100k rows) or timeouts? → enable Prepared Report (background job)
+```
+
+### Script Report `execute()` return shape
+
+```
+What to return?
+├─ Data only → columns, data
+├─ + HTML message above grid → columns, data, message
+├─ + chart → columns, data, None, chart
+├─ + summary cards → columns, data, None, None, report_summary
+└─ Full → columns, data, message, chart, report_summary, skip_total_row
+```
+
+Positional order must stay: `columns`, `data`, `message`, `chart`, `report_summary`, `skip_total_row` / `skip_total_rows` (Frappe expects this sequence).
+
+### Report types (quick glance)
+
+| Type | Code | Typical use | Access notes |
+|------|------|-------------|---------------|
+| Report Builder | None | Single DocType listing, filters, group by | Broader user access |
+| Query Report | SQL | Legacy SQL reports | Often System Manager–level |
+| Script Report (standard) | Python + JS | Charts, summaries, complex logic | Administrator + Developer Mode |
+| Script Report (custom) | Python in UI | One-offs without shipping code | System Manager |
+| Prepared Report | flag on report | Slow / huge result sets | Background generation, cached |
+
+### Supported filter fieldtypes (`.js` `filters`)
+
+| Fieldtype | Options | Behavior |
+|-----------|---------|----------|
+| `Link` | DocType | Autocomplete |
+| `Select` | newline-separated values | Fixed dropdown |
+| `Date` | — | Date picker |
+| `DateRange` | — | `[from_date, to_date]` |
+| `Check` | — | Boolean |
+| `Dynamic Link` | fieldname of driving filter | Depends on another filter |
+| `Data` | — | Free text |
+| `Int` | — | Integer |
+| `MultiSelectList` | DocType | Multi-select |
+
+### Chart types & summary rows
+
+- **Chart `type`** (standard): `bar`, `line`, `pie`, `donut`, `percentage` — plus mixed/axis setups when using per-dataset `chartType`.
+- **`chart.data`**: `labels` length must match each dataset’s `values` length (otherwise rendering breaks).
+- **Chart dict** may include `fieldtype`, `options`, `currency`, `colors`, `height`, `barOptions` (e.g. stacked), etc., as needed for formatting.
+- **`report_summary` entries**: `value`, `label`, `datatype` (e.g. `Currency`, `Int`), optional `currency`, `indicator` (`Green`, `Blue`, `Orange`, `Red`, `Grey`).
+
+### ALWAYS / NEVER (report code & data)
+
+- **ALWAYS** return `columns` and `data` as lists — use `[]`, not `None`, when empty.
+- **ALWAYS** define **Script Report** columns as dicts with `fieldname`, `label`, `fieldtype` (and `width`). **Query Reports only**: use legacy `"Label:Fieldtype/Options:Width"` in SQL `SELECT` aliases — not the dict format.
+- **ALWAYS** use `_(...)` / translatable helpers for user-visible labels in columns and summaries.
+- **ALWAYS** bind SQL parameters safely — pass filter values as parameters to `frappe.db.sql` / query builder; **never** interpolate untrusted filter input into the SQL string.
+- **ALWAYS** set **Reference DocType** on the Report document so permissions line up with the underlying data.
+- **NEVER** use `SELECT *` or load full documents inside tight loops for report rows — select columns in SQL or light APIs.
+- **NEVER** skip `width` on column dicts if you care about readable layout in the grid.
+- For heavy reports, **ALWAYS** consider indexes on filtered/grouped columns and **Prepared Report** when runtime or row count is high.
