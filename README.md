@@ -549,6 +549,7 @@ MIT License - See LICENSE file for details
 - Frappe Framework team for the amazing framework
 - Anthropic for Claude and Claude Code
 - Frappe community for development best practices
+- [sbknext/forge-frappe-skill](https://github.com/sbknext/forge-frappe-skill) — core Frappe skills contributions (MIT)
 
 ## Related Resources
 
