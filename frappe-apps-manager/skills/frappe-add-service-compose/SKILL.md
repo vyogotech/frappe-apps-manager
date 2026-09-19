@@ -1,5 +1,5 @@
 ---
-name: Add Service to Dev Compose
+name: frappe-add-service-compose
 description: Add a new microservice to dev-podman-compose.yml with proper configuration, dependencies, and networking.
 ---
 

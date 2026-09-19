@@ -1,5 +1,5 @@
 ---
-name: Generate TDD Tests
+name: frappe-tdd-tests
 description: Enforce the Iron Law of TDD for Frappe apps. Red-Green-Refactor cycle for DocTypes and Controllers.
 ---
 

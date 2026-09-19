@@ -1,5 +1,5 @@
 ---
-name: Validate Microservice Code
+name: frappe-microservice-validator
 description: Validate code follows frappe-microservice-lib patterns, security best practices, and framework conventions.
 ---
 

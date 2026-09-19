@@ -1,5 +1,5 @@
 ---
-name: Explain Frappe/ERPNext Concept
+name: frappe-concept-explainer
 description: Explain Frappe and ERPNext concepts, patterns, and conventions to help developers understand the framework.
 ---
 

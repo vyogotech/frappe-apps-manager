@@ -1,5 +1,5 @@
 ---
-name: Generate E2E Container Tests
+name: frappe-e2e-tests
 description: Generate container-based E2E tests using podman/docker, testing complete workflows across microservices.
 ---
 

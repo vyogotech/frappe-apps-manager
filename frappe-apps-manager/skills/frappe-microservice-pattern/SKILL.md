@@ -1,5 +1,5 @@
 ---
-name: Explain Microservice Pattern
+name: frappe-microservice-pattern
 description: Explain frappe-microservice-lib architecture patterns, bounded context, and multi-tenancy principles.
 ---
 
